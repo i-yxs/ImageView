@@ -7,14 +7,14 @@
         html { font-size: 100px; font-size: calc(100vw/3.2); }
         body { font-size: .14rem; }
         body { background: #f5f5f5; padding: 0; margin: 0; color: #333; }
-        .titlebar { background: #fff; line-height: .18rem; padding: .12rem 0; text-align: center; font-size: .15rem; box-shadow: 0 .01rem .02rem rgba(0,0,0,.15); }
+        .titlebar { background: #fff; line-height: .18rem; padding: .12rem 0; text-align: center; font-size: .15rem; box-shadow: 0 .01rem .02rem rgba(0,0,0,.15);}
         .imglist{padding:.1rem;}
         .imglist .item { background: #fff; padding: .05rem; margin-bottom: .1rem; border-radius: .03rem; box-shadow:0 .02rem .04rem rgba(0,0,0,.15); }
         .imglist .item img{width:100%;}
     </style>
 </head>
 <body>
-    <div class="titlebar">默认浏览模式</div>
+    <div class="titlebar">编辑模式</div>
     <div class="imglist" id="ImgList">
         <div class="item">
             <img src="img/014IR151-5.jpg" />
@@ -46,12 +46,14 @@
         var ImgList = document.querySelector('#ImgList');
         //删除事件
         ImageView.on('delete', function (data) {
-            console.log(data);
+            data.forEach(function (item) {
+                item.target.parentElement.remove();
+            });
         });
         //如果使用交互事件触发显示，选择器只会根据selector参数查找事件的绑定者的子元素
         ImgList.addEventListener('click', function () {
             ImageView.show({
-                pattern: 'default',
+                pattern: 'edit',
                 selector: 'img',
             });
         });

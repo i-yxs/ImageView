@@ -14,7 +14,7 @@
     </style>
 </head>
 <body>
-    <div class="titlebar">默认浏览模式</div>
+    <div class="titlebar">图像剪裁模式</div>
     <div class="imglist" id="ImgList">
         <div class="item">
             <img src="img/014IR151-5.jpg" />
@@ -44,15 +44,20 @@
     <script src="../src/ImageView.js"></script>
     <script>
         var ImgList = document.querySelector('#ImgList');
-        //删除事件
-        ImageView.on('delete', function (data) {
-            console.log(data);
+        //剪裁事件
+        ImageView.on('clipping', function (data) {
+            ImgList.innerHTML += '<div class="item"><img src="' + data + '" /></div>';
         });
         //如果使用交互事件触发显示，选择器只会根据selector参数查找事件的绑定者的子元素
         ImgList.addEventListener('click', function () {
             ImageView.show({
-                pattern: 'default',
+                pattern: 'clipping',
                 selector: 'img',
+                clippingWidth: 400,
+                clippingHeight: 400,
+                clippingRadius: 200,
+                clippingBackground: '',
+                clippingImportSuffix: 'jpge',
             });
         });
     </script>

@@ -3,107 +3,34 @@
 <head>
     <title></title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <link href="../{images}/css/global.css" rel="stylesheet" />
-    <script src="../{images}/js/fastclick.js"></script>
     <style>
         html { font-size: 100px; font-size: calc(100vw/3.2); }
-        body { font-size: 16px; }
-        /*箭头*/
-        .tArrow, .bArrow, .rArrow, .lArrow { width: .16rem; height: .16rem; position: relative; display: inline-block; vertical-align: sub; }
-        .tArrow:after, .bArrow:after, .rArrow:after, .lArrow:after { content: ''; position: absolute; width: 70%; height: 70%; border-color: #989898; border-style: solid; border-width: 2px; box-sizing: border-box; }
-        /*左箭头*/
-        .lArrow:after { top: 50%; left: 70%; border-right-color: transparent !important; border-bottom-color: transparent !important; transform: translate3d(-50%,-50%,0) rotateZ(-45deg); -webkit-transform: translate3d(-50%,-50%,0) rotateZ(-45deg); }
-        .imageViewer { position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0; background: #2b2b2b; color: #3f3f3f; font-size: .14rem; z-index: 1000; -webkit-user-select: none;user-select: none; }
-        .imageViewer.fade_in { opacity: 1; transition: opacity .3s ease-out; -webkit-transition: opacity .3s ease-out; }
-        .imageViewer.fade_in .iv_head { transform: translateY(0); -webkit-transform: translateY(0); transition: transform .3s ease-out; -webkit-transition: -webkit-transform .3s ease-out; }
-        .imageViewer.fade_in .iv_bottom { transform: translateY(0); -webkit-transform: translateY(0); transition: transform .3s ease-out; -webkit-transition: -webkit-transform .3s ease-out; }
-        .imageViewer.fade_out { opacity: 0; transition: opacity .3s ease-out; -webkit-transition: opacity .3s ease-out; }
-        .imageViewer.full .iv_head,
-        .imageViewer.fade_out .iv_head { transform: translateY(-100%); -webkit-transform: translateY(-100%); transition: transform .3s ease-out; -webkit-transition: -webkit-transform .3s ease-out; }
-        .imageViewer.full .iv_bottom,
-        .imageViewer.fade_out .iv_bottom { transform: translateY(100%); -webkit-transform: translateY(100%); transition: transform .3s ease-out; -webkit-transition: -webkit-transform .3s ease-out; }
-        .imageViewer[data-pattern=default] .iv_head .deleteBtn,
-        .imageViewer[data-pattern=default] .iv_head .confirmBtn,
-        .imageViewer[data-pattern=default] .iv_bottom { display: none; }
-        .imageViewer[data-pattern=edit] .iv_head .confirmBtn { display: none; }
-        .imageViewer[data-pattern=clipping] .iv_head .iv_title,
-        .imageViewer[data-pattern=clipping] .iv_head .deleteBtn,
-        .imageViewer[data-pattern=clipping] .iv_bottom { display: none; }
-        .imageViewer .iv_head { position: absolute; left: 0; top: 0; right: 0; height: .4rem; background: #fff; z-index: 5; transform: translateY(-100%); -webkit-transform: translateY(-100%); }
-        .imageViewer .iv_head:after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: #b2b2b2; transform: scaleY(.5); -webkit-transform: scaleY(.5); transform-origin: 0 100%; -webkit-transform-origin: 0 100%; }
-        .imageViewer .iv_head .closeBtn { padding: .09rem; float: left; position: relative; z-index: 2; }
-        .imageViewer .iv_head .closeBtn:after { content: ''; position: absolute; width: 0; height: 50%; top: 50%; right: 0; border-right: solid 1px #ddd; transform: translateY(-50%); -webkit-transform: translateY(-50%); }
-        .imageViewer .iv_head .lArrow { width: .22rem; height: .22rem; }
-        .imageViewer .iv_head .lArrow:after { border-color: #666; }
-        .imageViewer .iv_head .iv_title { position: absolute; top: 50%; padding-left: .5rem; transform: translateY(-50%); -webkit-transform: translateY(-50%); }
-        .imageViewer .iv_head .deleteBtn,
-        .imageViewer .iv_head .confirmBtn{ float: right; background: #f74c48;color: #fff; font-size: .12rem; line-height: .16rem; margin: .06rem; padding: .06rem .1rem; border-radius: .02rem; }
-        .imageViewer .iv_head .deleteBtn:active { background: #e43430; }
-        .imageViewer .iv_head .confirmBtn { background: #48ce55; padding: .06rem .15rem; }
-        .imageViewer .iv_head .confirmBtn:active { background: #2fbf3d; }
-        .imageViewer .iv_head .deleteBtn[disabled],
-        .imageViewer .iv_head .confirmBtn[disabled]{ background: #ccc;}
-        .imageViewer .iv_head .deleteBtn[disabled]:active,
-        .imageViewer .iv_head .confirmBtn[disabled]:active { background: #ccc; }
-        .imageViewer .iv_view { position: absolute; left: 0; top: 0; bottom: 0; right: 0; overflow: hidden; color: #fff; z-index: 4; }
-        .imageViewer .iv_masks { position: absolute; left: 50%; top: 50%; z-index: 2;box-sizing: border-box; border: solid 1px #fff; box-shadow: 0 0 0 3rem rgba(0,0,0,.6); transform: translate3d(-50%,-50%,0); -webkit-transform: translate3d(-50%,-50%,0); }
-        .imageViewer .iv_viewBox { position: absolute; width: 100%; height: 100%; }
-        .imageViewer .iv_view img { position: absolute; left: 0; top: 0; transform-origin: 0 0; -webkit-transform-origin: 0 0; }
-        .imageViewer .iv_bottom { position: absolute; bottom: 0; left: 0; right: 0; height: .4rem; background: #fff; z-index: 5; transform: translateY(100%); -webkit-transform: translateY(100%); }
-        .imageViewer .iv_bottom:before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: #b2b2b2; transform: scaleY(.5); -webkit-transform: scaleY(.5); transform-origin: 0 0; -webkit-transform-origin: 0 0; }
-        .imageViewer .iv_checkbox { line-height: .18rem; padding: .11rem .1rem; }
-        .imageViewer .iv_checkbox .checkboxs { margin-right: .05rem; }
-        .imageViewer .iv_checkbox .checkboxs { border-color: #bbb; }
-        .imageViewer .iv_checkbox .checkboxs[data-checked=true] { background: #48ce55; border-color: #48ce55; }
-        .imageViewer .iv_check { float: right; }
-        .imageViewer .iv_checkAll { float: left; }
+        body { font-size: .14rem; }
+        body { background: #f5f5f5; padding: 0; margin: 0; color: #333; }
+        .titlebar { background: #fff; line-height: .18rem; padding: .12rem 0; text-align: center; font-size: .15rem; box-shadow: 0 .01rem .02rem rgba(0,0,0,.15);}
+        .viewbtn { margin: .2rem .1rem 0; background: #fff; text-align: center; line-height: .16rem; padding: .1rem;border-radius:.05rem; box-shadow: 0 .02rem .02rem rgba(0,0,0,.15); }
+        .viewbtn:active { box-shadow: 0 .01rem .01rem rgba(0,0,0,.15); transform: translateY(.01rem); -webkit-transform: translateY(.01rem); }
     </style>
-    <style>
-        #doctorPatientQA img { width: 100%; }
-    </style>
-    <script>
-        window.onerror = function (a1,a2,a3) {
-            alert(a1 + ' ' + a2 + ' ' + a3);
-        }
-    </script>
 </head>
 <body>
-    <div id="bodyContainer">
-        <div id="doctorPatientQA">
-            <img src="../{images}/img/qa/avatar.png" />
-            <img src="../upload/5d0718a4b4781cee1ba6274a27s.jpg" />
-            <img src="../upload/730e0cf3d7cdfsdfsdfsd342sdf.jpg" />
-            <img src="../upload/730e0cf3d7ca7bcbdfsdfsdfsdf.jpg" />
-            <img src="../upload/dsa32f465as4fs2f1s54f5s4f.jpg" />
-            <img src="../upload/dsa32f46sf5s4f5s54fsdf.jpg" />
-            <img src="../upload/sysadm/1480409840588674.jpg" />
-        </div>
-    </div>
-    <script src="../{images}/js/ImageView.js"></script>
-    <script src="../{images}/js/jquery.min.js"></script>
+    <div class="titlebar">使用图片路径浏览</div>
+    <div class="viewbtn" id="ViewBtn">点击浏览</div>
+    <script src="../src/ImageView.js"></script>
     <script>
-        //ImageView.show({
-        //    pattern: 'edit',
-        //    selector: '#doctorPatientQA img',
-        //});
-        ImageView.on('delete', function (data) {
-            console.log(data);
-        });
-        ImageView.on('clipping', function (data) {
-            var image = document.createElement('img');
-            image.src = data;
-            document.body.appendChild(image);
-        });
-        doctorPatientQA.addEventListener('click', function () {
+        var ViewBtn = document.querySelector('#ViewBtn');
+        ViewBtn.addEventListener('click', function () {
             ImageView.show({
-                pattern: 'clipping',
-                selector: 'img',
-                clippingWidth: 100,
-                clippingHeight: 300,
-                clippingRadius: 100,
-                clippingBackground: '#fff',
-                clippingImportSuffix: 'png'
+                pattern: 'default',
+                selector: [
+                    'img/014IR151-5.jpg',
+                    'img/66R58PICKvP_1024.jpg',
+                    'img/s4d5f48s7fs1df5sf.jpg',
+                    'img/sfe4r5sf54s5fs45df.jpg',
+                    'img/730e0cf3d7cdfsdfsdfsd342sdf.jpg',
+                    'img/dsa32f4654sd5f48sdf45s.jpg',
+                    'img/dsa32f465as4fs2f1s54f5s4f.jpg',
+                    'img/dsa32f46sf5s4f5s54fsdf.jpg'
+                ],
             });
         });
     </script>

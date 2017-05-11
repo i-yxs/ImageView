@@ -746,15 +746,15 @@
             //容器
             container: null,
             //关闭按钮
-            closeBtn: null,
+            iv_closebtn: null,
             //关闭按钮
             iv_title: null,
             //关闭按钮
-            deleteBtn: null,
+            iv_delbtn: null,
             //确定按钮
-            confirmBtn: null,
+            iv_confbtn: null,
             //多选按钮
-            iv_check: null,
+            iv_checkalone: null,
             //中间栏
             iv_view: null,
             //显示盒子
@@ -773,13 +773,13 @@
         s.height = window.innerHeight;
         //当前页
         s.page = 1;
-        //选择器
-        s.selector = null;
-        //当前模式(默认：default 编辑：edit 剪裁：clipping)
-        s.pattern = null;
         //图片列表
         s.vImageList = null;
-        //图片间距
+        //选择器
+        s.selector = null;
+        //当前模式(默认：default 可选：edit(编辑) clipping(剪裁))
+        s.pattern = null;
+        //图片间距(默认：10)
         s.imageMargin = null;
         //裁剪后输出的图片宽度(默认：容器宽度)
         s.clippingWidth = null;
@@ -787,11 +787,11 @@
         s.clippingHeight = null;
         //裁剪图片的圆角数值(默认：0)
         s.clippingRadius = null;
-        //裁剪后输出的图片背景(默认为透明)
+        //裁剪后输出的图片背景(默认：透明)
         s.clippingBackground = null;
         //裁剪后输出的图片后缀(默认：png 可选：jpge)
         s.clippingImportSuffix = null;
-        //手势事件是否能进行旋转
+        //手势事件是否能进行旋转(默认：false 可选：true)
         s.isGestureRotate = null;
         //注册监听器
         Listeners.register(s);
@@ -832,14 +832,18 @@
                     isDisplay = true;
                 }
             } else if (s.vImageList.length > 1) {
-                s.vImageList.every(function (item, i) {
-                    if (item.target === target) {
-                        s.page = i + 1;
-                        isDisplay = true;
-                        return false;
-                    }
-                    return true;
-                });
+                if (isType(s.selector, 'string')) {
+                    s.vImageList.every(function (item, i) {
+                        if (item.target === target) {
+                            s.page = i + 1;
+                            isDisplay = true;
+                            return false;
+                        }
+                        return true;
+                    });
+                } else {
+                    isDisplay = true;
+                }
             }
         } else {
             isDisplay = true;
@@ -853,9 +857,9 @@
                 _DisplayRectBox.y = 0;
                 _DisplayRectBox.width = ImageView.width;
                 _DisplayRectBox.height = ImageView.height;
-                _Element.iv_masks.addClass('hide');
+                _Element.iv_masks.addClass('iv_hide');
             }
-            _Element.container.removeClass('fade_out hide').setAttribute('data-pattern', s.pattern);
+            _Element.container.removeClass('iv_fade_out iv_hide').setAttribute('data-pattern', s.pattern);
             //填充图片
             if (s.vImageList.length) {
                 var pageIndex = s.page - 1;
@@ -864,10 +868,10 @@
                 loadImages(s.vImageList);
                 updatePageData();
                 setTimeout(function () {
-                    _Element.container.addClass('fade_in');
+                    _Element.container.addClass('iv_fade_in');
                 });
             } else {
-                _Element.container.removeClass('fade_in').addClass('fade_out hide');
+                _Element.container.removeClass('iv_fade_in').addClass('iv_fade_out iv_hide');
             }
         } else {
             //还原初始状态
@@ -880,9 +884,9 @@
         if (!_AnimatePlaySign) {
             _AnimatePlaySign = true;
             s.restoreState();
-            _Element.container.removeClass('fade_in').addClass('fade_out');
+            _Element.container.removeClass('iv_fade_in').addClass('iv_fade_out');
             setTimeout(function () {
-                _Element.container.removeClass('fade_out').remove();
+                _Element.container.removeClass('iv_fade_out').remove();
                 _AnimatePlaySign = false;
             }, 300);
         }
@@ -944,33 +948,35 @@
     };
     //实例化
     ImageView = window.ImageView = new ImageView();
-    //初始化
-    createElement();
     //生成元素
-    function createElement() {
+    (function () {
+        //插入样式
+        document.head.innerHTML = "<style>html{font-size:100px;font-size:calc(100vw/3.2)}body{font-size:.14rem}.iv_hide{display:none!important}.iv_lArrow{position:relative;display:inline-block;width:.16rem;height:.16rem;vertical-align:sub}.iv_lArrow:after{position:absolute;top:50%;left:70%;box-sizing:border-box;width:70%;height:70%;border-color:#989898;border-style:solid;border-width:2px;content:'';-webkit-transform:translate3d(-50%,-50%,0) rotateZ(-45deg);transform:translate3d(-50%,-50%,0) rotateZ(-45deg);border-right-color:transparent!important;border-bottom-color:transparent!important}.iv_checkboxs{position:relative;display:inline-block;width:.16rem;height:.16rem;border:solid 1px #bbb;border-radius:.02rem;vertical-align:top}.iv_checkboxs::after{position:absolute;top:40%;left:50%;display:none;box-sizing:border-box;width:70%;height:40%;border-color:#fff;border-style:solid;border-width:2px;content:'';-webkit-transform:translate3d(-50%,-50%,0) rotateZ(-45deg);transform:translate3d(-50%,-50%,0) rotateZ(-45deg);border-top-color:transparent!important;border-right-color:transparent!important}.iv_checkboxs[data-checked=true]{border-color:#1CCDA6;background:#1CCDA6}.iv_checkboxs[data-checked=true]:after{display:block}.imageViewer{position:fixed;top:0;right:0;bottom:0;left:0;z-index:1000;background:#2b2b2b;color:#3f3f3f;font-size:.14rem;opacity:0;-webkit-user-select:none;user-select:none}.imageViewer.iv_fade_in{opacity:1;-webkit-transition:opacity .3s ease-out;transition:opacity .3s ease-out}.imageViewer.iv_fade_in .iv_head{-webkit-transition:-webkit-transform .3s ease-out;transition:transform .3s ease-out;-webkit-transform:translateY(0);transform:translateY(0)}.imageViewer.iv_fade_in .iv_bottom{-webkit-transition:-webkit-transform .3s ease-out;transition:transform .3s ease-out;-webkit-transform:translateY(0);transform:translateY(0)}.imageViewer.iv_fade_out{opacity:0;-webkit-transition:opacity .3s ease-out;transition:opacity .3s ease-out}.imageViewer.iv_fade_out .iv_head,.imageViewer.iv_full .iv_head{-webkit-transition:-webkit-transform .3s ease-out;transition:transform .3s ease-out;-webkit-transform:translateY(-100%);transform:translateY(-100%)}.imageViewer.iv_fade_out .iv_bottom,.imageViewer.iv_full .iv_bottom{-webkit-transition:-webkit-transform .3s ease-out;transition:transform .3s ease-out;-webkit-transform:translateY(100%);transform:translateY(100%)}.imageViewer.iv_fade_out .iv_view{pointer-events:none}.imageViewer[data-pattern=default] .iv_bottom,.imageViewer[data-pattern=default] .iv_head{display:none}.imageViewer[data-pattern=edit] .iv_head .iv_confbtn{display:none}.imageViewer[data-pattern=clipping] .iv_bottom,.imageViewer[data-pattern=clipping] .iv_head .iv_delbtn,.imageViewer[data-pattern=clipping] .iv_head .iv_title{display:none}.imageViewer .iv_head{position:absolute;top:0;right:0;left:0;z-index:5;height:.4rem;background:#fff;-webkit-transform:translateY(-100%);transform:translateY(-100%)}.imageViewer .iv_head:after{position:absolute;right:0;bottom:0;left:0;height:1px;background:#b2b2b2;content:'';-webkit-transform:scaleY(.5);transform:scaleY(.5);-webkit-transform-origin:0 100%;transform-origin:0 100%}.imageViewer .iv_head .iv_closebtn{position:relative;z-index:2;float:left;padding:.09rem}.imageViewer .iv_head .iv_closebtn:after{position:absolute;top:50%;right:0;width:0;height:50%;border-right:solid 1px #ddd;content:'';-webkit-transform:translateY(-50%);transform:translateY(-50%)}.imageViewer .iv_head .iv_lArrow{width:.22rem;height:.22rem}.imageViewer .iv_head .iv_lArrow:after{border-color:#666}.imageViewer .iv_head .iv_title{position:absolute;top:50%;padding-left:.5rem;-webkit-transform:translateY(-50%);transform:translateY(-50%)}.imageViewer .iv_head .iv_confbtn,.imageViewer .iv_head .iv_delbtn{float:right;margin:.06rem;padding:.06rem .1rem;border-radius:.02rem;background:#f74c48;color:#fff;font-size:.12rem;line-height:.16rem}.imageViewer .iv_head .iv_delbtn:active{background:#e43430}.imageViewer .iv_head .iv_confbtn{padding:.06rem .15rem;background:#48ce55}.imageViewer .iv_head .iv_confbtn:active{background:#2fbf3d}.imageViewer .iv_head .iv_confbtn[disabled],.imageViewer .iv_head .iv_delbtn[disabled]{background:#ccc}.imageViewer .iv_head .iv_confbtn[disabled]:active,.imageViewer .iv_head .iv_delbtn[disabled]:active{background:#ccc}.imageViewer .iv_view{position:absolute;top:0;right:0;bottom:0;left:0;z-index:4;overflow:hidden;color:#fff}.imageViewer .iv_masks{position:absolute;top:50%;left:50%;z-index:2;box-sizing:border-box;border:solid 1px #fff;box-shadow:0 0 0 3rem rgba(0,0,0,.6);-webkit-transform:translate3d(-50%,-50%,0);transform:translate3d(-50%,-50%,0)}.imageViewer .iv_viewBox{position:absolute;width:100%;height:100%}.imageViewer .iv_view img{position:absolute;top:0;left:0;-webkit-transform-origin:0 0;transform-origin:0 0}.imageViewer .iv_bottom{position:absolute;right:0;bottom:0;left:0;z-index:5;height:.4rem;background:#fff;-webkit-transform:translateY(100%);transform:translateY(100%)}.imageViewer .iv_bottom:before{position:absolute;top:0;right:0;left:0;height:1px;background:#b2b2b2;content:'';-webkit-transform:scaleY(.5);transform:scaleY(.5);-webkit-transform-origin:0 0;transform-origin:0 0}.imageViewer .iv_check{padding:.11rem .1rem;line-height:.18rem}.imageViewer .iv_check .iv_checkboxs{margin-right:.05rem}.imageViewer .iv_check .iv_checkboxs{border-color:#bbb}.imageViewer .iv_check .iv_checkboxs[data-checked=true]{border-color:#48ce55;background:#48ce55}.imageViewer .iv_checkalone{float:right}.imageViewer .iv_checkall{float:left}</style>" +
+            document.head.innerHTML;
+        //插入元素
         _Element.container = document.createElement('div');
-        _Element.container.addClass('imageViewer hide');
-        _Element.container.innerHTML = '<div class="iv_head"><div class="closeBtn"><div class="lArrow"><i></i></div></div><div class="iv_title">0/0</div><div class="deleteBtn">删除</div><div class="confirmBtn">完成</div></div><div class="iv_view"><div class="iv_masks"></div><div class="iv_viewBox"></div></div><div class="iv_bottom"><div class="iv_checkbox iv_checkAll"><div class="checkboxs"></div><span class="text">全选</span></div><div class="iv_checkbox iv_check"><div class="checkboxs"></div><span class="text">选择</span></div></div>';
+        _Element.container.addClass('imageViewer iv_hide');
+        _Element.container.innerHTML = '<div class="iv_head"><div class="iv_closebtn"><div class="iv_lArrow"><i></i></div></div><div class="iv_title">0/0</div><div class="iv_delbtn">删除</div><div class="iv_confbtn">完成</div></div><div class="iv_view"><div class="iv_masks"></div><div class="iv_viewBox"></div></div><div class="iv_bottom"><div class="iv_check iv_checkall"><div class="iv_checkboxs"></div><span class="text">全选</span></div><div class="iv_check iv_checkalone"><div class="iv_checkboxs"></div><span class="text">选择</span></div></div>';
         _Element.iv_masks = _Element.container.querySelector('.iv_masks');
         _Element.iv_view = _Element.container.querySelector('.iv_view');
         _Element.iv_viewBox = _Element.container.querySelector('.iv_viewBox');
         _Element.iv_head = _Element.container.querySelector('.iv_head');
-        _Element.closeBtn = _Element.iv_head.querySelector('.closeBtn');
+        _Element.iv_closebtn = _Element.iv_head.querySelector('.iv_closebtn');
         _Element.iv_title = _Element.iv_head.querySelector('.iv_title');
-        _Element.deleteBtn = _Element.iv_head.querySelector('.deleteBtn');
-        _Element.confirmBtn = _Element.iv_head.querySelector('.confirmBtn');
+        _Element.iv_delbtn = _Element.iv_head.querySelector('.iv_delbtn');
+        _Element.iv_confbtn = _Element.iv_head.querySelector('.iv_confbtn');
         _Element.iv_bottom = _Element.container.querySelector('.iv_bottom');
-        _Element.iv_check = _Element.iv_bottom.querySelector('.iv_check');
-        _Element.iv_checkAll = _Element.iv_bottom.querySelector('.iv_checkAll');
-        _Element.iv_checkboxs = _Element.iv_check.querySelector('.checkboxs');
-        _Element.iv_checkboxsAll = _Element.iv_checkAll.querySelector('.checkboxs');
+        _Element.iv_checkalone = _Element.iv_bottom.querySelector('.iv_checkalone');
+        _Element.iv_checkall = _Element.iv_bottom.querySelector('.iv_checkall');
+        _Element.iv_checkboxs = _Element.iv_checkalone.querySelector('.iv_checkboxs');
+        _Element.iv_checkboxsAll = _Element.iv_checkall.querySelector('.iv_checkboxs');
         bindingEvent();
-    };
+    })();
     //绑定事件
     function bindingEvent() {
         var s = ImageView;
         //多选按钮事件
-        _Element.iv_check.addEventListener('click', function () {
+        _Element.iv_checkalone.addEventListener('click', function () {
             checkboxsEvent();
             if (_Element.iv_checkboxs.getAttribute('data-checked') === 'true') {
                 s.vImageList[s.page - 1].selected = true;
@@ -980,7 +986,7 @@
             updatePageData();
         });
         //全选按钮事件
-        _Element.iv_checkAll.addEventListener('click', function () {
+        _Element.iv_checkall.addEventListener('click', function () {
             checkboxsEvent();
             if (_Element.iv_checkboxsAll.getAttribute('data-checked') === 'true') {
                 s.vImageList.forEach(function (item) {
@@ -994,12 +1000,15 @@
             updatePageData();
         });
         //删除按钮事件
-        _Element.deleteBtn.addEventListener('click', function () {
+        _Element.iv_delbtn.addEventListener('click', function () {
             var s = ImageView;
-            if (_Element.deleteBtn.getAttribute('disabled') === null) {
+            if (_Element.iv_delbtn.getAttribute('disabled') === null) {
                 var list = getSelectedImage();
                 list.forEach(function (item, i) {
-                    list[i] = item.target || src;
+                    list[i] = {
+                        index: item.index,
+                        target: item.target || item.src
+                    };
                 });
                 if (list.length) {
                     s.dispatchEvent('delete', list);
@@ -1008,11 +1017,11 @@
             }
         });
         //关闭按钮事件
-        _Element.closeBtn.addEventListener('click', function () {
+        _Element.iv_closebtn.addEventListener('click', function () {
             ImageView.close();
         });
         //裁剪完成按钮事件
-        _Element.confirmBtn.addEventListener('click', function () {
+        _Element.iv_confbtn.addEventListener('click', function () {
             var image = importClippingtoImage();
             s.dispatchEvent('clipping', image);
             ImageView.close();
@@ -1027,9 +1036,9 @@
         var s = ImageView;
         var list = getSelectedImage();
         if (list.length) {
-            _Element.deleteBtn.removeAttribute('disabled');
+            _Element.iv_delbtn.removeAttribute('disabled');
         } else {
-            _Element.deleteBtn.setAttribute('disabled', '');
+            _Element.iv_delbtn.setAttribute('disabled', '');
         }
         //是否全部选中
         if (list.length === s.vImageList.length) {
@@ -1047,7 +1056,7 @@
         if (s.pattern !== 'clipping') {
             _Element.iv_title.innerText = s.page + '/' + s.vImageList.length;
         }
-        _Element.deleteBtn.innerText = '删除' + list.length + '/' + s.vImageList.length;
+        _Element.iv_delbtn.innerText = '删除' + list.length + '/' + s.vImageList.length;
     };
     //筛选出被选中的图片
     function getSelectedImage() {
@@ -1066,36 +1075,51 @@
     //输出裁剪后图片
     function importClippingtoImage() {
         var s = ImageView;
+        var vimg = s.vImageList[0];
+        //当前图片显示宽度
+        var imageWidth = vimg.width * vimg.scale;
+        //根据图片实际大小计算放大倍数
+        var magnify = Math.max(vimg.naturalWidth / imageWidth, 1);
         //绘制层
         var drawCanvas = document.createElement('canvas');
         var drawContext = drawCanvas.getContext('2d');
-        drawCanvas.width = s.width;
-        drawCanvas.height = s.height;
-        //输入层
-        var importCanvas = document.createElement('canvas');
-        var importContext = importCanvas.getContext('2d');
-        importCanvas.width = s.clippingWidth;
-        importCanvas.height = s.clippingHeight;
+        drawCanvas.width = s.width * magnify;
+        drawCanvas.height = s.height * magnify;
+        //输出层
+        var outputCanvas = document.createElement('canvas');
+        var outputContext = outputCanvas.getContext('2d');
+        outputCanvas.width = s.clippingWidth;
+        outputCanvas.height = s.clippingHeight;
         //圆角大小
         var radius = _DisplayRectBox.width / s.clippingWidth * s.clippingRadius;
-        radius = Math.min(Math.min(_DisplayRectBox.width, _DisplayRectBox.height) / 2, radius);
+        radius = Math.min(Math.min(_DisplayRectBox.width, _DisplayRectBox.height) / 2, radius) * magnify;
         //绘制图片
-        var vimg = s.vImageList[0];
         if (s.clippingBackground) {
             drawContext.fillStyle = s.clippingBackground;
             drawContext.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
         }
         drawContext.save();
-        drawContext.setTransform(1, 0, 0, 1, _DisplayRectBox.x, _DisplayRectBox.y);
-        drawContext.radiusRect(_DisplayRectBox.width, _DisplayRectBox.height, radius, radius, radius, radius);
+        drawContext.setTransform(1, 0, 0, 1,
+            _DisplayRectBox.x * magnify,
+            _DisplayRectBox.y * magnify);
+        drawContext.radiusRect(
+            _DisplayRectBox.width * magnify,
+            _DisplayRectBox.height * magnify, 
+            radius, radius, radius, radius);
         drawContext.clip();
-        drawContext.setTransform(vimg.scale, 0, 0, vimg.scale, vimg.position.x, vimg.position.y);
-        drawContext.drawImage(vimg.image, 0, 0, vimg.width, vimg.height);
+        drawContext.setTransform(1, 0, 0, 1,
+            vimg.position.x * magnify,
+            vimg.position.y * magnify);
+        drawContext.drawImage(vimg.image, 0, 0, vimg.naturalWidth, vimg.naturalHeight);
         drawContext.restore();
         //绘制到输入层
-        var zoom = importCanvas.width / _DisplayRectBox.width;
-        importContext.drawImage(drawCanvas, (importCanvas.width - drawCanvas.width * zoom) / 2, (importCanvas.height - drawCanvas.height * zoom) / 2, drawCanvas.width * zoom, drawCanvas.height * zoom);
-        return importCanvas.toDataURL('image/' + s.clippingImportSuffix);
+        var zoom = outputCanvas.width / _DisplayRectBox.width;
+        outputContext.drawImage(drawCanvas,
+            (outputCanvas.width - s.width * zoom) / 2,
+            (outputCanvas.height - s.height * zoom) / 2,
+            s.width * zoom,
+            s.height * zoom);
+        return outputCanvas.toDataURL('image/' + s.clippingImportSuffix);
     };
     //加载图片
     function loadImages(list) {
@@ -1191,7 +1215,7 @@
         _Element.iv_masks.style.width = width + 'px';
         _Element.iv_masks.style.height = height + 'px';
         _Element.iv_masks.style.borderRadius = s.clippingRadius * zoom + 'px';
-        _Element.iv_masks.removeClass('hide');
+        _Element.iv_masks.removeClass('iv_hide');
     };
     //数据类型判断
     function isType(obj, name) {
@@ -1200,19 +1224,19 @@
     //多选按钮事件
     function checkboxsEvent() {
         var target = event.currentTarget;
-        if (target.hasClass('checkboxs')) {
-            var checkboxs = target;
+        if (target.hasClass('iv_checkboxs')) {
+            var iv_checkboxs = target;
         } else {
-            var checkboxs = target.querySelector('.checkboxs');
-            if (!checkboxs) {
+            var iv_checkboxs = target.querySelector('.iv_checkboxs');
+            if (!iv_checkboxs) {
                 return;
             }
         }
-        var checked = checkboxs.getAttribute('data-checked');
+        var checked = iv_checkboxs.getAttribute('data-checked');
         if (checked === 'true') {
-            checkboxs.setAttribute('data-checked', false);
+            iv_checkboxs.setAttribute('data-checked', false);
         } else {
-            checkboxs.setAttribute('data-checked', true);
+            iv_checkboxs.setAttribute('data-checked', true);
         }
     };
     //按下的触点列表
@@ -1366,10 +1390,13 @@
             if (currentTouch.clientX === touch.clientX &&
                 currentTouch.clientY === touch.clientY) {
                 //单击隐藏上下工具栏
-                if (_Element.container.hasClass('full')) {
-                    _Element.container.removeClass('full');
+                if (_Element.container.hasClass('iv_full')) {
+                    _Element.container.removeClass('iv_full');
                 } else {
-                    _Element.container.addClass('full');
+                    _Element.container.addClass('iv_full');
+                }
+                if (ImageView.pattern === 'default') {
+                    ImageView.close();
                 }
             }
         }
