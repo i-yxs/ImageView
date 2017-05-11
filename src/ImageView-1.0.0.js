@@ -1,6 +1,7 @@
 ﻿/*
     移动端图像查看器，具有分页浏览、多选删除、图像截取功能
     作者：yxs
+    项目地址：https://github.com/qq597392321/ImageView
 */
 (function () {
     /*
