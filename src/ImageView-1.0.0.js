@@ -19,7 +19,7 @@
             }
         }
         return false;
-    }
+    };
     //添加样式类
     HTMLElement.prototype.addClass = function (name) {
         var list1 = name.split(' ');
