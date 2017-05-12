@@ -784,7 +784,7 @@
         s.imageMargin = null;
         //裁剪后输出的图片宽度(默认：容器宽度)
         s.clippingWidth = null;
-        //裁剪后输出的图片高度(默认：容器高度)
+        //裁剪后输出的图片高度(默认：容器宽度)
         s.clippingHeight = null;
         //裁剪图片的圆角数值(默认：0)
         s.clippingRadius = null;
@@ -945,6 +945,8 @@
         s.vImageList = [];
         _ViewBoxPositionX = 0;
         _Element.iv_viewBox.innerHTML = '';
+        _Element.iv_confbtn.innerText = '完成';
+        _Element.iv_confbtn.removeAttribute('disabled');
         checkboxsEvent();
     };
     //实例化
@@ -1023,9 +1025,15 @@
         });
         //裁剪完成按钮事件
         _Element.iv_confbtn.addEventListener('click', function () {
-            var image = importClippingtoImage();
-            s.dispatchEvent('clipping', image);
-            ImageView.close();
+            if (_Element.iv_confbtn.getAttribute('disabled') === null) {
+                _Element.iv_confbtn.innerText = '加载中...';
+                _Element.iv_confbtn.setAttribute('disabled', '');
+                setTimeout(function () {
+                    var image = importClippingtoImage();
+                    s.dispatchEvent('clipping', image);
+                    s.close();
+                });
+            }
         });
         //绑定touch事件
         _Element.iv_view.addEventListener('touchstart', touchstart, { passive: false });
@@ -1224,20 +1232,22 @@
     };
     //多选按钮事件
     function checkboxsEvent() {
-        var target = event.currentTarget;
-        if (target.hasClass('iv_checkboxs')) {
-            var iv_checkboxs = target;
-        } else {
-            var iv_checkboxs = target.querySelector('.iv_checkboxs');
-            if (!iv_checkboxs) {
-                return;
+        var target = event && event.currentTarget;
+        if (target) {
+            if (target.hasClass('iv_checkboxs')) {
+                var iv_checkboxs = target;
+            } else {
+                var iv_checkboxs = target.querySelector('.iv_checkboxs');
+                if (!iv_checkboxs) {
+                    return;
+                }
             }
-        }
-        var checked = iv_checkboxs.getAttribute('data-checked');
-        if (checked === 'true') {
-            iv_checkboxs.setAttribute('data-checked', false);
-        } else {
-            iv_checkboxs.setAttribute('data-checked', true);
+            var checked = iv_checkboxs.getAttribute('data-checked');
+            if (checked === 'true') {
+                iv_checkboxs.setAttribute('data-checked', false);
+            } else {
+                iv_checkboxs.setAttribute('data-checked', true);
+            }
         }
     };
     //按下的触点列表
