@@ -11,7 +11,7 @@
   imageMargin:10,               //图片间距(默认：10)
   isGestureRotate:true,         //手势事件是否能进行旋转(默认：false 可选：true)
   clippingWidth:[Number],       //裁剪后输出的图片宽度(默认：容器宽度)
-  clippingHeight:[Number],      //裁剪后输出的图片高度(默认：容器高度)
+  clippingHeight:[Number],      //裁剪后输出的图片高度(默认：容器宽度)
   clippingRadius:0,             //裁剪图片的圆角数值(默认：0)
   clippingBackground:'',        //裁剪后输出的图片背景(默认：透明)
   clippingImportSuffix:'png'    //裁剪后输出的图片后缀(默认：png 可选：jpge)
