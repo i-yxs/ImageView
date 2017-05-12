@@ -17,8 +17,7 @@
   clippingImportSuffix:'png'    //裁剪后输出的图片后缀(默认：png 可选：jpge)
 }
 ```
-
-### .close(): 
+### .close()
 `关闭图像查看器`
 
 ### .prevPage()
