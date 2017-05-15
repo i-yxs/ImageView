@@ -420,17 +420,22 @@
     //适应父容器大小
     Vimg.prototype.adaptContainerSize = function () {
         var s = this;
+        var width = Math.round(_DisplayRectBox.height / s.naturalHeight * s.naturalWidth);
+        var height = Math.round(_DisplayRectBox.width / s.naturalWidth * s.naturalHeight);
         if (ImageView.pattern === 'clipping') {
-            s.width = ImageView.width;
-            s.height = s.width / s.naturalWidth * s.naturalHeight;
-        } else {
-            var width = Math.round(ImageView.height / s.naturalHeight * s.naturalWidth);
-            var height = Math.round(ImageView.width / s.naturalWidth * s.naturalHeight);
-            if (width < ImageView.width) {
+            if (width >= _DisplayRectBox.width) {
                 s.width = width;
-                s.height = ImageView.height;
-            } else if (height < ImageView.height) {
-                s.width = ImageView.width;
+                s.height = _DisplayRectBox.height;
+            } else if (height >= _DisplayRectBox.height) {
+                s.width = _DisplayRectBox.width;
+                s.height = height;
+            }
+        } else {
+            if (width <= _DisplayRectBox.width) {
+                s.width = width;
+                s.height = _DisplayRectBox.height;
+            } else if (height <= _DisplayRectBox.height) {
+                s.width = _DisplayRectBox.width;
                 s.height = height;
             }
         }
@@ -825,27 +830,7 @@
         //是否显示
         var isDisplay = false;
         if (event) {
-            var target = event.target;
-            var currentTarget = event.currentTarget;
-            if (s.vImageList.length === 1) {
-                var vimgTarget = s.vImageList[0].target;
-                if (vimgTarget === currentTarget || vimgTarget === target) {
-                    isDisplay = true;
-                }
-            } else if (s.vImageList.length > 1) {
-                if (isType(s.selector, 'string')) {
-                    s.vImageList.every(function (item, i) {
-                        if (item.target === target) {
-                            s.page = i + 1;
-                            isDisplay = true;
-                            return false;
-                        }
-                        return true;
-                    });
-                } else {
-                    isDisplay = true;
-                }
-            }
+            isDisplay = isEventTargettovImageList();
         } else {
             isDisplay = true;
         }
@@ -864,13 +849,14 @@
             //填充图片
             if (s.vImageList.length) {
                 var pageIndex = s.page - 1;
-                s.vImageList[pageIndex].selected = true;
-                _ViewBoxPositionX = -s.width * pageIndex - s.imageMargin * pageIndex;
                 loadImages(s.vImageList);
+                s.vImageList[pageIndex].selected = true;
+                _ViewBoxPositionX = -(s.width + s.imageMargin) * pageIndex;
                 updatePageData();
+                setViewBoxPositionX();
                 setTimeout(function () {
                     _Element.container.addClass('iv_fade_in');
-                });
+                },50);
             } else {
                 _Element.container.removeClass('iv_fade_in').addClass('iv_fade_out iv_hide');
             }
@@ -953,6 +939,7 @@
     ImageView = window.ImageView = new ImageView();
     //生成元素
     (function () {
+        var s = ImageView;
         //插入样式
         document.head.innerHTML = "<style>html{font-size:100px;font-size:calc(100vw/3.2)}body{font-size:.14rem}.iv_hide{display:none!important}.iv_lArrow{position:relative;display:inline-block;width:.16rem;height:.16rem;vertical-align:sub}.iv_lArrow:after{position:absolute;top:50%;left:70%;box-sizing:border-box;width:70%;height:70%;border-color:#989898;border-style:solid;border-width:2px;content:'';-webkit-transform:translate3d(-50%,-50%,0) rotateZ(-45deg);transform:translate3d(-50%,-50%,0) rotateZ(-45deg);border-right-color:transparent!important;border-bottom-color:transparent!important}.iv_checkboxs{position:relative;display:inline-block;width:.16rem;height:.16rem;border:solid 1px #bbb;border-radius:.02rem;vertical-align:top}.iv_checkboxs::after{position:absolute;top:40%;left:50%;display:none;box-sizing:border-box;width:70%;height:40%;border-color:#fff;border-style:solid;border-width:2px;content:'';-webkit-transform:translate3d(-50%,-50%,0) rotateZ(-45deg);transform:translate3d(-50%,-50%,0) rotateZ(-45deg);border-top-color:transparent!important;border-right-color:transparent!important}.iv_checkboxs[data-checked=true]{border-color:#1CCDA6;background:#1CCDA6}.iv_checkboxs[data-checked=true]:after{display:block}.imageViewer{position:fixed;top:0;right:0;bottom:0;left:0;z-index:1000;background:#2b2b2b;color:#3f3f3f;font-size:.14rem;opacity:0;-webkit-user-select:none;user-select:none}.imageViewer.iv_fade_in{opacity:1;-webkit-transition:opacity .3s ease-out;transition:opacity .3s ease-out}.imageViewer.iv_fade_in .iv_head{-webkit-transition:-webkit-transform .3s ease-out;transition:transform .3s ease-out;-webkit-transform:translateY(0);transform:translateY(0)}.imageViewer.iv_fade_in .iv_bottom{-webkit-transition:-webkit-transform .3s ease-out;transition:transform .3s ease-out;-webkit-transform:translateY(0);transform:translateY(0)}.imageViewer.iv_fade_out{opacity:0;-webkit-transition:opacity .3s ease-out;transition:opacity .3s ease-out}.imageViewer.iv_fade_out .iv_head,.imageViewer.iv_full .iv_head{-webkit-transition:-webkit-transform .3s ease-out;transition:transform .3s ease-out;-webkit-transform:translateY(-100%);transform:translateY(-100%)}.imageViewer.iv_fade_out .iv_bottom,.imageViewer.iv_full .iv_bottom{-webkit-transition:-webkit-transform .3s ease-out;transition:transform .3s ease-out;-webkit-transform:translateY(100%);transform:translateY(100%)}.imageViewer.iv_fade_out .iv_view{pointer-events:none}.imageViewer[data-pattern=default] .iv_bottom,.imageViewer[data-pattern=default] .iv_head{display:none}.imageViewer[data-pattern=edit] .iv_head .iv_confbtn{display:none}.imageViewer[data-pattern=clipping] .iv_bottom,.imageViewer[data-pattern=clipping] .iv_head .iv_delbtn,.imageViewer[data-pattern=clipping] .iv_head .iv_title{display:none}.imageViewer .iv_head{position:absolute;top:0;right:0;left:0;z-index:5;height:.4rem;background:#fff;-webkit-transform:translateY(-100%);transform:translateY(-100%)}.imageViewer .iv_head:after{position:absolute;right:0;bottom:0;left:0;height:1px;background:#b2b2b2;content:'';-webkit-transform:scaleY(.5);transform:scaleY(.5);-webkit-transform-origin:0 100%;transform-origin:0 100%}.imageViewer .iv_head .iv_closebtn{position:relative;z-index:2;float:left;padding:.09rem}.imageViewer .iv_head .iv_closebtn:after{position:absolute;top:50%;right:0;width:0;height:50%;border-right:solid 1px #ddd;content:'';-webkit-transform:translateY(-50%);transform:translateY(-50%)}.imageViewer .iv_head .iv_lArrow{width:.22rem;height:.22rem}.imageViewer .iv_head .iv_lArrow:after{border-color:#666}.imageViewer .iv_head .iv_title{position:absolute;top:50%;padding-left:.5rem;-webkit-transform:translateY(-50%);transform:translateY(-50%)}.imageViewer .iv_head .iv_confbtn,.imageViewer .iv_head .iv_delbtn{float:right;margin:.06rem;padding:.06rem .1rem;border-radius:.02rem;background:#f74c48;color:#fff;font-size:.12rem;line-height:.16rem}.imageViewer .iv_head .iv_delbtn:active{background:#e43430}.imageViewer .iv_head .iv_confbtn{padding:.06rem .15rem;background:#48ce55}.imageViewer .iv_head .iv_confbtn:active{background:#2fbf3d}.imageViewer .iv_head .iv_confbtn[disabled],.imageViewer .iv_head .iv_delbtn[disabled]{background:#ccc}.imageViewer .iv_head .iv_confbtn[disabled]:active,.imageViewer .iv_head .iv_delbtn[disabled]:active{background:#ccc}.imageViewer .iv_view{position:absolute;top:0;right:0;bottom:0;left:0;z-index:4;overflow:hidden;color:#fff}.imageViewer .iv_masks{position:absolute;top:50%;left:50%;z-index:2;box-sizing:border-box;border:solid 1px #fff;box-shadow:0 0 0 3rem rgba(0,0,0,.6);-webkit-transform:translate3d(-50%,-50%,0);transform:translate3d(-50%,-50%,0)}.imageViewer .iv_viewBox{position:absolute;width:100%;height:100%}.imageViewer .iv_view img{position:absolute;top:0;left:0;-webkit-transform-origin:0 0;transform-origin:0 0}.imageViewer .iv_bottom{position:absolute;right:0;bottom:0;left:0;z-index:5;height:.4rem;background:#fff;-webkit-transform:translateY(100%);transform:translateY(100%)}.imageViewer .iv_bottom:before{position:absolute;top:0;right:0;left:0;height:1px;background:#b2b2b2;content:'';-webkit-transform:scaleY(.5);transform:scaleY(.5);-webkit-transform-origin:0 0;transform-origin:0 0}.imageViewer .iv_check{padding:.11rem .1rem;line-height:.18rem}.imageViewer .iv_check .iv_checkboxs{margin-right:.05rem}.imageViewer .iv_check .iv_checkboxs{border-color:#bbb}.imageViewer .iv_check .iv_checkboxs[data-checked=true]{border-color:#48ce55;background:#48ce55}.imageViewer .iv_checkalone{float:right}.imageViewer .iv_checkall{float:left}</style>" +
             document.head.innerHTML;
@@ -973,11 +960,6 @@
         _Element.iv_checkall = _Element.iv_bottom.querySelector('.iv_checkall');
         _Element.iv_checkboxs = _Element.iv_checkalone.querySelector('.iv_checkboxs');
         _Element.iv_checkboxsAll = _Element.iv_checkall.querySelector('.iv_checkboxs');
-        bindingEvent();
-    })();
-    //绑定事件
-    function bindingEvent() {
-        var s = ImageView;
         //多选按钮事件
         _Element.iv_checkalone.addEventListener('click', function () {
             checkboxsEvent();
@@ -1039,7 +1021,7 @@
         _Element.iv_view.addEventListener('touchstart', touchstart, { passive: false });
         _Element.iv_view.addEventListener('touchmove', touchmove, { passive: false });
         _Element.iv_view.addEventListener('touchend', touchend, { passive: false });
-    };
+    })();
     //更新翻页数据
     function updatePageData() {
         var s = ImageView;
@@ -1061,7 +1043,6 @@
         } else {
             _Element.iv_checkboxs.setAttribute('data-checked', false);
         }
-        setViewBoxPositionX();
         if (s.pattern !== 'clipping') {
             _Element.iv_title.innerText = s.page + '/' + s.vImageList.length;
         }
@@ -1152,7 +1133,6 @@
     };
     //选择器处理
     function SelectorDispose(selector) {
-        var s = this;
         var list = [];
         var target = event && event.target;
         var currentTarget = event && event.currentTarget;
@@ -1204,6 +1184,32 @@
         }
         return list;
     };
+    //判断事件目标是否在图像列表中
+    function isEventTargettovImageList() {
+        var s = ImageView;
+        var isDisplay = false;
+        var target = event.target;
+        var currentTarget = event.currentTarget;
+        if (s.vImageList.length === 1) {
+            var vimgTarget = s.vImageList[0].target;
+            if (vimgTarget === currentTarget || vimgTarget === target) {
+                isDisplay = true;
+            }
+        } else if (s.vImageList.length > 1) {
+            if (isType(s.selector, 'string')) {
+                s.vImageList.every(function (item, i) {
+                    if (item.target === target) {
+                        s.page = i + 1;
+                        return !(isDisplay = true);
+                    }
+                    return true;
+                });
+            } else {
+                isDisplay = true;
+            }
+        }
+        return isDisplay;
+    };
     //裁剪遮罩适应容器大小
     function clippingMaskAdaptContainerSize() {
         var s = ImageView;
@@ -1225,10 +1231,6 @@
         _Element.iv_masks.style.height = height + 'px';
         _Element.iv_masks.style.borderRadius = s.clippingRadius * zoom + 'px';
         _Element.iv_masks.removeClass('iv_hide');
-    };
-    //数据类型判断
-    function isType(obj, name) {
-        return Object.prototype.toString.call(obj).toLowerCase() == '[object ' + name.toLowerCase() + ']';
     };
     //多选按钮事件
     function checkboxsEvent() {
