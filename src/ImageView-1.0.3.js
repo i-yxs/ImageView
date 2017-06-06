@@ -56,13 +56,13 @@
     HTMLElement.prototype.getComputedStyle = function (name, pseudoElt) {
         var res;
         var style = getComputedStyle(this, pseudoElt);
-        if (res = /^([0-9.]+)[^0-9.]+$/.exec(style[name])) {
+        if (res = /^([0-9.%]+)[^0-9.%]+$/.exec(style[name])) {
             return Number(res[1]);
         }
         return style[name];
     };
     //设置指定样式值
-    var browsersCompatible = ['transform', 'transition', 'animation'];
+    var browsersCompatible = ['transform', 'transition', 'animation', 'clipPath'];
     HTMLElement.prototype.css = function (json) {
         for (var name in json) {
             var index = browsersCompatible.indexOf(name);
@@ -183,7 +183,7 @@
     };
     Listeners = new Listeners();
     /*
-        速度衰减动画
+        速度衰减动画类
     */
     function SpeedDecay(from, speed) {
         var s = this;
@@ -361,7 +361,7 @@
     //动画算法
     Animation.prototype.easing = function (t, b, c, d) { return c * ((t = t / d - 1) * t * t + 1) + b; };
     /*
-        图片查看器
+        图像查看器类
     */
     //翻页动画
     var _PageFx = new Animation();
@@ -786,6 +786,8 @@
         s.clippingImportSuffix = null;
         //手势事件是否能进行旋转(默认：false 可选：true)
         s.isGestureRotate = null;
+        //当使用dom事件触发显示时，是否查找目标元素是否存在于图片列表中
+        s.isFindTargettoImageList = null;
         //注册监听器
         Listeners.register(s);
     };
@@ -809,18 +811,17 @@
             _Element.container.removeClass('iv_hide').setAttribute('data-pattern', s.pattern);
             //设置当前页为选中状态
             var pageIndex = s.page - 1;
+            var vimg = s.vImageList[pageIndex];
             s.vImageList[pageIndex].selected = true;
             _Private.viewBoxPositionX = -(s.width + s.imageMargin) * pageIndex;
             //更新数据
             _Private.updatePageData();
             _Private.setViewBoxPositionX();
-            //获取当前页目标元素
-            var targetElement = s.vImageList[pageIndex].target;
-            //根据元素类型获取显示数据
-            if (targetElement.nodeName.toLowerCase() === 'img') {
+            //当前页图片目标是否为元素
+            if (vimg.target.nodeType) {
                 _Private.imagesEaseinAnimate();
             } else {
-                _Private.backEaseinAnimate();
+                _Private.notAnimateShow();
             }
             if (s.pattern === 'clipping') {
                 _Private.clippingMaskAdaptContainerSize();
@@ -835,15 +836,14 @@
     //关闭
     ImageView.prototype.close = function () {
         var s = this;
-        //获取当前页目标元素
-        var targetElement = s.vImageList[s.page - 1].target;
-        //根据元素类型获取显示数据
-        if (targetElement.nodeName.toLowerCase() === 'img') {
+        var pageIndex = s.page - 1;
+        var vimg = s.vImageList[pageIndex];
+        //当前页图片目标是否为元素
+        if (vimg.target.nodeType && vimg.target.parentNode) {
             _Private.imagesEaseoutAnimate();
         } else {
-            _Private.backEaseoutAnimate();
+            _Private.notAnimateClose();
         }
-        s.restoreState();
     };
     //上一页
     ImageView.prototype.prevPage = function () {
@@ -863,7 +863,7 @@
         }
         s.indexPage(page);
     };
-    //跳转到指定页数
+    //跳转到指定页
     ImageView.prototype.indexPage = function (index) {
         var s = this;
         var page = s.page;
@@ -892,7 +892,7 @@
         _Private.updatePageData();
     };
     //还原初始状态
-    ImageView.prototype.restoreState = function () {
+    ImageView.prototype.restore = function () {
         var s = this;
         s.page = 1;
         s.vImageList = [];
@@ -1262,22 +1262,24 @@
         },
         //根据当前滑动位置判断当前页数
         basedSlideXSetPage: function (horDirection) {
-            var viewWidth = ImageView.width;
-            var viewLeft = Math.min(_Private.viewBoxPositionX + ImageView.imageMargin, 0);
+            var s = ImageView;
+            var viewWidth = s.width;
+            var imageMargin = s.imageMargin * (s.page - 1);
+            var viewLeft = Math.min(_Private.viewBoxPositionX + imageMargin, 0);
             var index = Math.abs(parseInt(viewLeft / viewWidth));
             if (horDirection === 'right') {
                 var moveX = viewWidth - Math.abs(viewLeft % viewWidth);
                 if (Math.abs(moveX / viewWidth) >= .2) {
-                    ImageView.indexPage(index + 1);
+                    s.indexPage(index + 1);
                 } else {
-                    ImageView.indexPage(ImageView.page);
+                    s.indexPage(s.page);
                 }
             } else if (horDirection === 'left') {
                 var moveX = viewLeft % viewWidth;
                 if (Math.abs(moveX / viewWidth) >= .2) {
-                    ImageView.indexPage(index + 2);
+                    s.indexPage(index + 2);
                 } else {
-                    ImageView.indexPage(ImageView.page);
+                    s.indexPage(s.page);
                 }
             }
         },
@@ -1412,7 +1414,7 @@
         init: function () {
             var s = ImageView;
             //插入样式
-            document.head.innerHTML = "<style>html{font-size:100px;font-size:calc(100vw/3.2)}body{font-size:.14rem}.imageViewer{position:fixed;top:0;right:0;bottom:0;left:0;z-index:1000;color:#3f3f3f;font-size:.14rem;-webkit-user-select:none;user-select:none}.imageViewer .iv_hide{display:none!important}.imageViewer .iv_lArrow{position:relative;display:inline-block;width:.16rem;height:.16rem;vertical-align:sub}.imageViewer .iv_lArrow:after{position:absolute;top:50%;left:70%;box-sizing:border-box;width:70%;height:70%;border-color:#989898;border-style:solid;border-width:2px;content:'';-webkit-transform:translate3d(-50%,-50%,0) rotateZ(-45deg);transform:translate3d(-50%,-50%,0) rotateZ(-45deg);border-right-color:transparent!important;border-bottom-color:transparent!important}.imageViewer .iv_checkboxs{position:relative;display:inline-block;width:.16rem;height:.16rem;border:solid 1px #bbb;border-radius:.02rem;vertical-align:top}.imageViewer .iv_checkboxs::after{position:absolute;top:40%;left:50%;display:none;box-sizing:border-box;width:70%;height:40%;border-color:#fff;border-style:solid;border-width:2px;content:'';-webkit-transform:translate3d(-50%,-50%,0) rotateZ(-45deg);transform:translate3d(-50%,-50%,0) rotateZ(-45deg);border-top-color:transparent!important;border-right-color:transparent!important}.imageViewer .iv_checkboxs[data-checked=true]{border-color:#1CCDA6;background:#1CCDA6}.imageViewer .iv_checkboxs[data-checked=true]:after{display:block}.imageViewer .iv_checkalone{float:right}.imageViewer .iv_checkall{float:left}.imageViewer .iv_block{position:absolute;top:0;right:0;left:0;z-index:50}.imageViewer .iv_head{position:absolute;top:0;right:0;left:0;z-index:50;height:.4rem;background:#fff;-webkit-transform:translateY(-100%);transform:translateY(-100%)}.imageViewer .iv_head:after{position:absolute;right:0;bottom:0;left:0;height:1px;background:#b2b2b2;content:'';-webkit-transform:scaleY(.5);transform:scaleY(.5);-webkit-transform-origin:0 100%;transform-origin:0 100%}.imageViewer .iv_head .iv_closebtn{position:relative;z-index:2;float:left;padding:.09rem}.imageViewer .iv_head .iv_closebtn:after{position:absolute;top:50%;right:0;width:0;height:50%;border-right:solid 1px #ddd;content:'';-webkit-transform:translateY(-50%);transform:translateY(-50%)}.imageViewer .iv_head .iv_lArrow{width:.22rem;height:.22rem}.imageViewer .iv_head .iv_lArrow:after{border-color:#666}.imageViewer .iv_head .iv_title{position:absolute;top:50%;padding-left:.5rem;-webkit-transform:translateY(-50%);transform:translateY(-50%)}.imageViewer .iv_head .iv_confbtn,.imageViewer .iv_head .iv_delbtn{float:right;margin:.06rem;padding:.06rem .1rem;border-radius:.02rem;background:#f74c48;color:#fff;font-size:.12rem;line-height:.16rem}.imageViewer .iv_head .iv_delbtn:active{background:#e43430}.imageViewer .iv_head .iv_confbtn{padding:.06rem .15rem;background:#48ce55}.imageViewer .iv_head .iv_confbtn:active{background:#2fbf3d}.imageViewer .iv_head .iv_confbtn[disabled],.imageViewer .iv_head .iv_delbtn[disabled]{background:#ccc}.imageViewer .iv_head .iv_confbtn[disabled]:active,.imageViewer .iv_head .iv_delbtn[disabled]:active{background:#ccc}.imageViewer .iv_view{position:absolute;top:0;right:0;bottom:0;left:0;z-index:4;overflow:hidden;background:#2b2b2b;color:#fff;opacity:0}.imageViewer .iv_masks{position:absolute;pointer-events:none;width:100%;height:100%;top:50%;left:50%;z-index:20;box-sizing:border-box;border:solid 1px #fff;box-shadow:0 0 0 3rem rgba(0,0,0,.6);-webkit-transform:translate3d(-50%,-50%,0);transform:translate3d(-50%,-50%,0)}.imageViewer .iv_viewBox{position:absolute;width:100%;height:100%}.imageViewer .iv_view img{position:absolute;top:0;left:0;-webkit-transform-origin:0 0;transform-origin:0 0}.imageViewer .iv_bottom{position:absolute;right:0;bottom:0;left:0;z-index:50;height:.4rem;background:#fff;-webkit-transform:translateY(100%);transform:translateY(100%)}.imageViewer .iv_bottom:before{position:absolute;top:0;right:0;left:0;height:1px;background:#b2b2b2;content:'';-webkit-transform:scaleY(.5);transform:scaleY(.5);-webkit-transform-origin:0 0;transform-origin:0 0}.imageViewer .iv_check{padding:.11rem .1rem;line-height:.18rem}.imageViewer .iv_check .iv_checkboxs{margin-right:.05rem}.imageViewer .iv_check .iv_checkboxs{border-color:#bbb}.imageViewer .iv_check .iv_checkboxs[data-checked=true]{border-color:#48ce55;background:#48ce55}.imageViewer .iv_animate{position:absolute;left:0;top:0;z-index:10;transform-origin:0 0;-webkit-transform-origin:0 0}.imageViewer .iv_animate .iv_img{position:absolute;left:0;top:0;right:0;bottom:0;background-size:100% 100%;background-repeat:no-repeat}.imageViewer.iv_fade_in .iv_view{opacity:1;-webkit-transition:opacity .3s ease-out;transition:opacity .3s ease-out}.imageViewer.iv_fade_in .iv_bottom,.imageViewer.iv_fade_in .iv_head{-webkit-transition:-webkit-transform .3s ease-out;transition:transform .3s ease-out;-webkit-transform:translateY(0);transform:translateY(0)}.imageViewer.iv_fade_out .iv_view{opacity:0;-webkit-transition:opacity .3s ease-out;transition:opacity .3s ease-out}.imageViewer.iv_fade_out .iv_head,.imageViewer.iv_full .iv_head{-webkit-transition:-webkit-transform .3s ease-out;transition:transform .3s ease-out;-webkit-transform:translateY(-100%);transform:translateY(-100%)}.imageViewer.iv_fade_out .iv_bottom,.imageViewer.iv_full .iv_bottom{-webkit-transition:-webkit-transform .3s ease-out;transition:transform .3s ease-out;-webkit-transform:translateY(100%);transform:translateY(100%)}.imageViewer.iv_fade_out .iv_view{pointer-events:none}.imageViewer[data-pattern=default] .iv_bottom,.imageViewer[data-pattern=default] .iv_head,.imageViewer[data-pattern=default] .iv_masks{display:none}.imageViewer[data-pattern=edit] .iv_head .iv_confbtn,.imageViewer[data-pattern=edit] .iv_masks{display:none}.imageViewer[data-pattern=clipping] .iv_bottom,.imageViewer[data-pattern=clipping] .iv_head .iv_delbtn,.imageViewer[data-pattern=clipping] .iv_head .iv_title{display:none}.imageViewer[data-state=in] .iv_animate{-webkit-transition:-webkit-transform .3s cubic-bezier(0,0,.4,1.2);transition:transform .3s cubic-bezier(0,0,.4,1.2)}.imageViewer[data-state=in] .iv_animate .iv_img{-webkit-transition:all .3s cubic-bezier(0,0,.4,1.2);transition:all .3s cubic-bezier(0,0,.4,1.2)}.imageViewer[data-state=in] .iv_masks{transition:all .3s cubic-bezier(0,0,.4,1.4);-webkit-transition:all .3s cubic-bezier(0,0,.4,1.4)}.imageViewer[data-state=out] .iv_animate{-webkit-transition:-webkit-transform .3s cubic-bezier(0,0,.3,1.1);transition:transform .3s cubic-bezier(0,0,.3,1.1)}.imageViewer[data-state=out] .iv_animate .iv_img{-webkit-transition:all .3s cubic-bezier(0,0,.3,1.1);transition:all .3s cubic-bezier(0,0,.3,1.1)}.imageViewer[data-state=out] .iv_masks{transition:all .3s cubic-bezier(0,0,.4,1.4);-webkit-transition:all .3s cubic-bezier(0,0,.4,1.4)}.imageViewer[data-state=in] .iv_viewBox,.imageViewer[data-state=out] .iv_viewBox{display:none}</style>" + document.head.innerHTML;
+            document.head.innerHTML = "<style>html{font-size:100px;font-size:calc(100vw/3.2)}body{font-size:.14rem}.imageViewer{position:fixed;top:0;right:0;bottom:0;left:0;z-index:1000;color:#3f3f3f;font-size:.14rem;-webkit-user-select:none;user-select:none}.imageViewer .iv_hide{display:none!important}.imageViewer .iv_lArrow{position:relative;display:inline-block;width:.16rem;height:.16rem;vertical-align:sub}.imageViewer .iv_lArrow:after{position:absolute;top:50%;left:70%;box-sizing:border-box;width:70%;height:70%;border-color:#989898;border-style:solid;border-width:2px;content:'';-webkit-transform:translate3d(-50%,-50%,0) rotateZ(-45deg);transform:translate3d(-50%,-50%,0) rotateZ(-45deg);border-right-color:transparent!important;border-bottom-color:transparent!important}.imageViewer .iv_checkboxs{position:relative;display:inline-block;width:.16rem;height:.16rem;border:solid 1px #bbb;border-radius:.02rem;vertical-align:top}.imageViewer .iv_checkboxs::after{position:absolute;top:40%;left:50%;display:none;box-sizing:border-box;width:70%;height:40%;border-color:#fff;border-style:solid;border-width:2px;content:'';-webkit-transform:translate3d(-50%,-50%,0) rotateZ(-45deg);transform:translate3d(-50%,-50%,0) rotateZ(-45deg);border-top-color:transparent!important;border-right-color:transparent!important}.imageViewer .iv_checkboxs[data-checked=true]{border-color:#1CCDA6;background:#1CCDA6}.imageViewer .iv_checkboxs[data-checked=true]:after{display:block}.imageViewer .iv_checkalone{float:right}.imageViewer .iv_checkall{float:left}.imageViewer .iv_block{position:absolute;top:0;right:0;left:0;z-index:50}.imageViewer .iv_head{position:absolute;top:0;right:0;left:0;z-index:50;height:.4rem;background:#fff;-webkit-transform:translateY(-100%);transform:translateY(-100%)}.imageViewer .iv_head:after{position:absolute;right:0;bottom:0;left:0;height:1px;background:#b2b2b2;content:'';-webkit-transform:scaleY(.5);transform:scaleY(.5);-webkit-transform-origin:0 100%;transform-origin:0 100%}.imageViewer .iv_head .iv_closebtn{position:relative;z-index:2;float:left;padding:.09rem}.imageViewer .iv_head .iv_closebtn:after{position:absolute;top:50%;right:0;width:0;height:50%;border-right:solid 1px #ddd;content:'';-webkit-transform:translateY(-50%);transform:translateY(-50%)}.imageViewer .iv_head .iv_lArrow{width:.22rem;height:.22rem}.imageViewer .iv_head .iv_lArrow:after{border-color:#666}.imageViewer .iv_head .iv_title{position:absolute;top:50%;padding-left:.5rem;-webkit-transform:translateY(-50%);transform:translateY(-50%)}.imageViewer .iv_head .iv_confbtn,.imageViewer .iv_head .iv_delbtn{float:right;margin:.06rem;padding:.06rem .1rem;border-radius:.02rem;background:#f74c48;color:#fff;font-size:.12rem;line-height:.16rem}.imageViewer .iv_head .iv_delbtn:active{background:#e43430}.imageViewer .iv_head .iv_confbtn{padding:.06rem .15rem;background:#48ce55}.imageViewer .iv_head .iv_confbtn:active{background:#2fbf3d}.imageViewer .iv_head .iv_confbtn[disabled],.imageViewer .iv_head .iv_delbtn[disabled]{background:#ccc}.imageViewer .iv_head .iv_confbtn[disabled]:active,.imageViewer .iv_head .iv_delbtn[disabled]:active{background:#ccc}.imageViewer .iv_view{position:absolute;top:0;right:0;bottom:0;left:0;z-index:4;overflow:hidden;background:#2b2b2b;color:#fff;opacity:0}.imageViewer .iv_masks{position:absolute;pointer-events:none;width:100%;height:100%;top:50%;left:50%;z-index:20;box-sizing:border-box;border:solid 1px #fff;box-shadow:0 0 0 3rem rgba(0,0,0,.6);-webkit-transform:translate3d(-50%,-50%,0);transform:translate3d(-50%,-50%,0)}.imageViewer .iv_viewBox{position:absolute;width:100%;height:100%}.imageViewer .iv_view img{position:absolute;top:0;left:0;-webkit-transform-origin:0 0;transform-origin:0 0}.imageViewer .iv_bottom{position:absolute;right:0;bottom:0;left:0;z-index:50;height:.4rem;background:#fff;-webkit-transform:translateY(100%);transform:translateY(100%)}.imageViewer .iv_bottom:before{position:absolute;top:0;right:0;left:0;height:1px;background:#b2b2b2;content:'';-webkit-transform:scaleY(.5);transform:scaleY(.5);-webkit-transform-origin:0 0;transform-origin:0 0}.imageViewer .iv_check{padding:.11rem .1rem;line-height:.18rem}.imageViewer .iv_check .iv_checkboxs{margin-right:.05rem}.imageViewer .iv_check .iv_checkboxs{border-color:#bbb}.imageViewer .iv_check .iv_checkboxs[data-checked=true]{border-color:#48ce55;background:#48ce55}.imageViewer .iv_animate{position:absolute;left:0;top:0;z-index:10;transform-origin:0 0;-webkit-transform-origin:0 0}.imageViewer .iv_animate .iv_img{position:absolute;left:0;top:0;right:0;bottom:0;background-repeat:no-repeat;background-size:100% 100%}.imageViewer.iv_fade_in .iv_view{opacity:1;-webkit-transition:opacity .2s ease-out;transition:opacity .2s ease-out}.imageViewer.iv_fade_in .iv_bottom,.imageViewer.iv_fade_in .iv_head{-webkit-transition:-webkit-transform .2s ease-out;transition:transform .2s ease-out;-webkit-transform:translateY(0);transform:translateY(0)}.imageViewer.iv_fade_out .iv_view{opacity:0;-webkit-transition:opacity .2s ease-out;transition:opacity .2s ease-out}.imageViewer.iv_fade_out .iv_head,.imageViewer.iv_full .iv_head{-webkit-transition:-webkit-transform .2s ease-out;transition:transform .2s ease-out;-webkit-transform:translateY(-100%);transform:translateY(-100%)}.imageViewer.iv_fade_out .iv_bottom,.imageViewer.iv_full .iv_bottom{-webkit-transition:-webkit-transform .2s ease-out;transition:transform .2s ease-out;-webkit-transform:translateY(100%);transform:translateY(100%)}.imageViewer.iv_fade_out .iv_view{pointer-events:none}.imageViewer[data-pattern=default] .iv_bottom,.imageViewer[data-pattern=default] .iv_head,.imageViewer[data-pattern=default] .iv_masks{display:none}.imageViewer[data-pattern=edit] .iv_head .iv_confbtn,.imageViewer[data-pattern=edit] .iv_masks{display:none}.imageViewer[data-pattern=clipping] .iv_bottom,.imageViewer[data-pattern=clipping] .iv_head .iv_delbtn,.imageViewer[data-pattern=clipping] .iv_head .iv_title{display:none}.imageViewer[data-state=in] .iv_animate{-webkit-transition:all .2s cubic-bezier(0,0,.1,1);transition:all .2s cubic-bezier(0,0,.1,1)}.imageViewer[data-state=in] .iv_animate .iv_img{-webkit-transition:all .2s cubic-bezier(0,0,.1,1);transition:all .2s cubic-bezier(0,0,.1,1)}.imageViewer[data-state=out] .iv_animate{-webkit-transition:all .2s cubic-bezier(0,0,0,1);transition:all .2s cubic-bezier(0,0,0,1)}.imageViewer[data-state=out] .iv_animate .iv_img{-webkit-transition:all .2s cubic-bezier(0,0,0,1);transition:all .2s cubic-bezier(0,0,0,1)}.imageViewer[data-state=in] .iv_masks{transition:all .2s cubic-bezier(0,0,0,1);-webkit-transition:all .2s cubic-bezier(0,0,0,1)}.imageViewer[data-state=out] .iv_masks{transition:all .2s cubic-bezier(0,0,0,1);-webkit-transition:all .2s cubic-bezier(0,0,0,1)}.imageViewer[data-state=in] .iv_viewBox,.imageViewer[data-state=out] .iv_viewBox{display:none}</style>" + document.head.innerHTML;
             //插入元素
             _Element.container = document.createElement('div');
             _Element.container.addClass('imageViewer iv_hide');
@@ -1465,7 +1467,7 @@
                     list.forEach(function (item, i) {
                         list[i] = {
                             index: item.index,
-                            target: item.target || item.src
+                            target: item.target
                         };
                     });
                     if (list.length) {
@@ -1494,56 +1496,38 @@
             _Element.iv_view.addEventListener('touchstart', _Interaction.touchstart, { passive: false });
             _Element.iv_view.addEventListener('touchmove', _Interaction.touchmove, { passive: false });
             _Element.iv_view.addEventListener('touchend', _Interaction.touchend, { passive: false });
+            //关闭动画完成回调事件
+            s.on('close', function () {
+                //还原初始状态
+                s.restore();
+            });
         },
-        //背景渐入动画
-        backEaseinAnimate: function () {
+        //无动画显示
+        notAnimateShow: function () {
             var s = ImageView;
-            var pageIndex = s.page - 1;
-            var vimg = s.vImageList[pageIndex];
-            //当前页图片加载完成后显示
-            vimg.onLoad = function () {
-                var rectbox = _Private.getTargetBackData();
-                //动画前的准备
-                _Element.iv_animate.css({
-                    width: rectbox.displayWidth + 'px',
-                    height: rectbox.displayHeight + 'px',
-                    transform: 'translate3d(' + rectbox.displayLeft + 'px, ' + rectbox.displayTop + 'px, 0) scale3d(1,1,1)'
-                });
-                _Element.iv_img.css({
-                    backgroundImage: 'url(' + vimg.src + ')',
-                    webkitClipPath: 'polygon(' + rectbox.retpos[0][0] + 'px ' + rectbox.retpos[0][1] + 'px, ' + rectbox.retpos[1][0] + 'px ' + rectbox.retpos[1][1] + 'px, ' + rectbox.retpos[2][0] + 'px ' + rectbox.retpos[2][1] + 'px, ' + rectbox.retpos[3][0] + 'px ' + rectbox.retpos[3][1] + 'px)'
-                });
-                _Element.iv_block.removeClass('iv_hide');
-                _Element.iv_animate.removeClass('iv_hide');
-                ////延迟动画
-                //setTimeout(function () {
-                //    _Element.container.setAttribute('data-state', 'in');
-                //    _Element.iv_animate.css({
-                //        transform: 'translate3d(' + vimg.position.x + 'px, ' + vimg.position.y + 'px, 0) scale3d(' + rectbox.scale + ',' + rectbox.scale + ',1)'
-                //    });
-                //    _Element.iv_img.css({ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)' });
-                //    if (s.pattern === 'clipping') {
-                //        _Element.iv_masks.css({
-                //            width: _Private.displayRectBox.width + 'px',
-                //            height: _Private.displayRectBox.height + 'px',
-                //            borderRadius: _Private.displayRectBox.clippingRadius + 'px'
-                //        });
-                //    }
-                //    _Element.container.removeClass('iv_fade_out').addClass('iv_fade_in');
-                //    setTimeout(function () {
-                //        _Element.iv_block.addClass('iv_hide');
-                //        _Element.iv_animate.addClass('iv_hide').setAttribute('data-state', '');
-                //        _Element.container.setAttribute('data-state', 'default');
-                //    }, 300);
-                //}, 40);
-            };
-            if (vimg.isload) {
-                vimg.onLoad.call(vimg);
-            }
+            _Element.iv_block.removeClass('iv_hide');
+            setTimeout(function () {
+                _Element.container.setAttribute('data-state', 'default');
+                _Element.container.removeClass('iv_fade_out').addClass('iv_fade_in');
+                setTimeout(function () {
+                    _Element.iv_block.addClass('iv_hide');
+                    s.dispatchEvent('show');
+                }, 200);
+            }, 40);
         },
-        //背景渐出动画
-        backEaseoutAnimate: function () {
-
+        //无动画关闭
+        notAnimateClose: function () {
+            var s = ImageView;
+            _Element.iv_block.removeClass('iv_hide');
+            setTimeout(function () {
+                _Element.container.setAttribute('data-state', 'default');
+                _Element.container.removeClass('iv_fade_in').addClass('iv_fade_out');
+                setTimeout(function () {
+                    _Element.iv_block.addClass('iv_hide');
+                    _Element.container.remove();
+                    s.dispatchEvent('close');
+                }, 200);
+            }, 40);
         },
         //图像渐入动画
         imagesEaseinAnimate: function () {
@@ -1552,7 +1536,12 @@
             var vimg = s.vImageList[pageIndex];
             //当前页图片加载完成后显示
             vimg.onLoad = function () {
-                var rectbox = _Private.getTargetImagesData();
+                //根据元素类型获取显示数据
+                if (vimg.target.nodeName.toLowerCase() === 'img') {
+                    var rectbox = _Private.getTargetImagesData();
+                } else {
+                    var rectbox = _Private.getTargetBackData();
+                }
                 //动画前的准备
                 _Element.iv_animate.css({
                     width: rectbox.displayWidth + 'px',
@@ -1561,7 +1550,7 @@
                 });
                 _Element.iv_img.css({
                     backgroundImage: 'url(' + vimg.src + ')',
-                    webkitClipPath: 'polygon(' + rectbox.retpos[0][0] + 'px ' + rectbox.retpos[0][1] + 'px, ' + rectbox.retpos[1][0] + 'px ' + rectbox.retpos[1][1] + 'px, ' + rectbox.retpos[2][0] + 'px ' + rectbox.retpos[2][1] + 'px, ' + rectbox.retpos[3][0] + 'px ' + rectbox.retpos[3][1] + 'px)'
+                    clipPath: 'polygon(' + rectbox.retpos[0][0] + 'px ' + rectbox.retpos[0][1] + 'px, ' + rectbox.retpos[1][0] + 'px ' + rectbox.retpos[1][1] + 'px, ' + rectbox.retpos[2][0] + 'px ' + rectbox.retpos[2][1] + 'px, ' + rectbox.retpos[3][0] + 'px ' + rectbox.retpos[3][1] + 'px)'
                 });
                 _Element.iv_block.removeClass('iv_hide');
                 _Element.iv_animate.removeClass('iv_hide');
@@ -1584,7 +1573,7 @@
                         _Element.iv_block.addClass('iv_hide');
                         _Element.iv_animate.addClass('iv_hide').setAttribute('data-state', '');
                         _Element.container.setAttribute('data-state', 'default');
-                    }, 300);
+                    }, 200);
                 }, 40);
             };
             if (vimg.isload) {
@@ -1596,7 +1585,12 @@
             var s = ImageView;
             var pageIndex = s.page - 1;
             var vimg = s.vImageList[pageIndex];
-            var rectbox = _Private.getTargetImagesData();
+            //根据元素类型获取显示数据
+            if (vimg.target.nodeName.toLowerCase() === 'img') {
+                var rectbox = _Private.getTargetImagesData();
+            } else {
+                var rectbox = _Private.getTargetBackData();
+            }
             //动画前的准备
             _Element.iv_animate.css({
                 width: vimg.width + 'px',
@@ -1605,7 +1599,7 @@
             });
             _Element.iv_img.css({
                 backgroundImage: 'url(' + vimg.src + ')',
-                webkitClipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)'
+                clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)'
             });
             _Element.iv_block.removeClass('iv_hide');
             _Element.iv_animate.removeClass('iv_hide');
@@ -1628,7 +1622,7 @@
                     _Element.iv_animate.addClass('iv_hide').setAttribute('data-state', '');
                     _Element.container.setAttribute('data-state', 'default');
                     _Element.container.removeClass('iv_fade_out').remove();
-                }, 300);
+                }, 200);
             }, 40);
         },
         //获取当前页目标元素背景数据
@@ -1642,11 +1636,15 @@
             var targetRectbox = targetElement.getBoundingClientRect();
             var displayRectbox = {};
             var parentNode = targetElement.parentNode;
+            var borderTop = targetElement.getComputedStyle('borderTopWidth');
+            var borderLeft = targetElement.getComputedStyle('borderLeftWidth');
+            var borderRight = targetElement.getComputedStyle('borderRightWidth');
+            var borderBottom = targetElement.getComputedStyle('borderBottomWidth');
             //目标图片可见区域
-            displayRectbox.visibleTop = targetRectbox.top;
-            displayRectbox.visibleLeft = targetRectbox.left;
-            displayRectbox.visibleWidth = targetRectbox.width;
-            displayRectbox.visibleHeight = targetRectbox.height;
+            displayRectbox.visibleTop = targetRectbox.top + borderTop;
+            displayRectbox.visibleLeft = targetRectbox.left + borderLeft;
+            displayRectbox.visibleWidth = targetRectbox.width - borderRight - borderLeft;
+            displayRectbox.visibleHeight = targetRectbox.height - borderBottom - borderTop;
             //目标图片真实区域
             displayRectbox.displayTop = targetRectbox.top;
             displayRectbox.displayLeft = targetRectbox.left;
@@ -1689,11 +1687,95 @@
                 }
                 parentNode = parentNode.parentNode;
             }
+            //背景大小属性
+            var res;
+            var backgroundSize = getComputedStyle(targetElement)['backgroundSize'];
+            if (res = /^([0-9.]+)([a-z%]+)$/.exec(backgroundSize)) {
+                //高度适应宽度
+                switch (res[2]) {
+                    case 'px': displayRectbox.displayWidth = res[1] * displayRectbox.displayWidth; break;
+                    case '%': displayRectbox.displayWidth = res[1] / 100 * displayRectbox.displayWidth; break;
+                }
+                displayRectbox.displayHeight = displayRectbox.displayWidth / vimg.width * vimg.height;
+            } else if (res = /^auto ([0-9.]+)([a-z%]+)$/i.exec(backgroundSize)) {
+                //宽度适应高度
+                switch (res[2]) {
+                    case 'px': displayRectbox.displayHeight = res[1] * displayRectbox.displayHeight; break;
+                    case '%': displayRectbox.displayHeight = res[1] / 100 * displayRectbox.displayHeight; break;
+                }
+                displayRectbox.displayWidth = displayRectbox.displayHeight / vimg.height * vimg.width;
+            } else if (res = /^([0-9.]+)([a-z%]+) ([0-9.]+)([a-z%]+)$/.exec(backgroundSize)) {
+                //自定义宽高
+                switch (res[2]) {
+                    case 'px': displayRectbox.displayWidth = Number(res[1]); break;
+                    case '%': displayRectbox.displayWidth = res[1] / 100 * displayRectbox.displayWidth; break;
+                }
+                switch (res[4]) {
+                    case 'px': displayRectbox.displayHeight = Number(res[3]); break;
+                    case '%': displayRectbox.displayHeight = res[3] / 100 * displayRectbox.displayHeight; break;
+                }
+            } else if (backgroundSize === 'cover') {
+                //缩放到最小宽高
+                displayRectbox.displayWidth = displayRectbox.visibleHeight / vimg.height * vimg.width;
+                displayRectbox.displayHeight = displayRectbox.visibleWidth / vimg.width * vimg.height;
+                if (displayRectbox.displayWidth >= displayRectbox.visibleWidth) {
+                    displayRectbox.displayHeight = displayRectbox.displayWidth / vimg.width * vimg.height;
+                } else {
+                    displayRectbox.displayWidth = displayRectbox.displayHeight / vimg.height * vimg.width;
+                }
+            } else if (backgroundSize === 'contain') {
+                //缩放到最大宽高
+                displayRectbox.displayWidth = displayRectbox.visibleHeight / vimg.height * vimg.width;
+                displayRectbox.displayHeight = displayRectbox.visibleWidth / vimg.width * vimg.height;
+                if (displayRectbox.displayWidth <= displayRectbox.visibleWidth) {
+                    displayRectbox.displayHeight = displayRectbox.displayWidth / vimg.width * vimg.height;
+                } else {
+                    displayRectbox.displayWidth = displayRectbox.displayHeight / vimg.height * vimg.width;
+                }
+            }
+            displayRectbox.displayWidth = Math.round(displayRectbox.displayWidth);
+            displayRectbox.displayHeight = Math.round(displayRectbox.displayHeight);
+            //背景定位属性
+            var ratioX, ratioY;
+            var backgroundPositionX = getComputedStyle(targetElement)['backgroundPositionX'] || 0;
+            var backgroundPositionY = getComputedStyle(targetElement)['backgroundPositionY'] || 0;
+            if (res = /^([0-9.]+)([a-z%]+)$/.exec(backgroundPositionX)) {
+                switch (res[2]) {
+                    case 'px': displayRectbox.displayLeft = Number(res[1]) + displayRectbox.visibleLeft; break;
+                    case '%': ratioX = res[1] / 100; break;
+                }
+            }
+            if (res = /^([0-9.]+)([a-z%]+)$/.exec(backgroundPositionY)) {
+                switch (res[2]) {
+                    case 'px': displayRectbox.displayTop = Number(res[1]) + displayRectbox.visibleTop; break;
+                    case '%': ratioY = res[1] / 100; break;
+                }
+            }
+            if (ratioX !== undefined) {
+                displayRectbox.displayLeft = (displayRectbox.visibleWidth - displayRectbox.displayWidth) * ratioX + displayRectbox.visibleLeft;
+            }
+            if (ratioY !== undefined) {
+                displayRectbox.displayTop = (displayRectbox.visibleHeight - displayRectbox.displayHeight) * ratioY + displayRectbox.visibleTop;
+            }
             displayRectbox.scale = vimg.width / displayRectbox.displayWidth;
-            //背景属性
-            displayRectbox.backgroundSize = targetElement.getComputedStyle('backgroundSize');
-            displayRectbox.backgroundRepeat = targetElement.getComputedStyle('backgroundRepeat');
-            displayRectbox.backgroundPosition = targetElement.getComputedStyle('backgroundPosition');
+            //可见区域相对于真实区域的矩形坐标点
+            displayRectbox.retpos = [];
+            displayRectbox.retpos[0] = [
+                    displayRectbox.visibleLeft - displayRectbox.displayLeft,
+                    displayRectbox.visibleTop - displayRectbox.displayTop
+            ];
+            displayRectbox.retpos[1] = [
+                    displayRectbox.retpos[0][0] + displayRectbox.visibleWidth,
+                    displayRectbox.retpos[0][1],
+            ];
+            displayRectbox.retpos[2] = [
+                    displayRectbox.retpos[1][0],
+                    displayRectbox.retpos[1][1] + displayRectbox.visibleHeight,
+            ];
+            displayRectbox.retpos[3] = [
+                    displayRectbox.retpos[0][0],
+                    displayRectbox.retpos[0][1] + displayRectbox.visibleHeight,
+            ];
             return displayRectbox;
         },
         //获取当前页目标图片数据
@@ -1707,7 +1789,6 @@
             var targetRectbox = targetElement.getBoundingClientRect();
             var displayRectbox = {};
             var parentNode = targetElement.parentNode;
-            displayRectbox.type = 'img';
             //目标图片可见区域
             displayRectbox.visibleTop = targetRectbox.top;
             displayRectbox.visibleLeft = targetRectbox.left;
@@ -1836,7 +1917,8 @@
                 clippingRadius: 0,
                 clippingBackground: '',
                 clippingImportSuffix: 'png',
-                isGestureRotate: true
+                isGestureRotate: true,
+                isFindTargettoImageList: true
             };
             for (var name in json) {
                 if (defaultOption.hasOwnProperty(name) && name in defaultOption) {
@@ -1858,7 +1940,7 @@
                 //数组列表
                 selector.forEach(function (item) {
                     if (typeof item === 'string') {
-                        list.push(new Vimg({ src: item }));
+                        list.push(new Vimg({ src: item, target: item }));
                     } else if (typeof item === 'object') {
                         if (item.src) {
                             list.push(new Vimg({ src: item.src, target: item }));
@@ -1868,6 +1950,9 @@
             } else if (isType(selector, 'string')) {
                 if (currentTarget) {
                     currentTarget = currentTarget.querySelectorAll(selector);
+                    if (!currentTarget.length) {
+                        currentTarget = document.querySelectorAll(selector);
+                    }
                 } else {
                     currentTarget = document.querySelectorAll(selector);
                 }
@@ -1978,13 +2063,17 @@
                 }
             } else if (s.vImageList.length > 1) {
                 if (isType(s.selector, 'string')) {
-                    s.vImageList.every(function (item, i) {
-                        if (item.target === target) {
-                            s.page = i + 1;
-                            return !(isDisplay = true);
-                        }
-                        return true;
-                    });
+                    if (s.isFindTargettoImageList) {
+                        s.vImageList.every(function (item, i) {
+                            if (item.target === target) {
+                                s.page = i + 1;
+                                return !(isDisplay = true);
+                            }
+                            return true;
+                        });
+                    } else {
+                        isDisplay = true;
+                    }
                 } else {
                     isDisplay = true;
                 }

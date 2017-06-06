@@ -9,11 +9,8 @@
         body { background: #f5f5f5; padding: 0; margin: 0; color: #333; }
         .titlebar { background: #fff; line-height: .18rem; padding: .12rem 0; text-align: center; font-size: .15rem; box-shadow: 0 .01rem .02rem rgba(0,0,0,.15); }
         .imglist { padding: .1rem; }
-        .imglist .item { position: relative; background-color: #fff; background-size: cover; background-position: 50% 50%; padding: .05rem; border: solid 1px #fff; margin-bottom: .1rem; border-radius: .03rem; box-shadow: 0 .02rem .04rem rgba(0,0,0,.15); overflow: auto; height: 1rem; width: 1rem; }
-        .imglist .item img { width: 3rem; position: absolute; left: 50%; top: 50%; transform: translate3d(-50%,-50%,0); }
-    </style>
-    <style>
-
+        .imglist .item { position: relative; background-color: #fff; background-size: cover; background-position:center; background-repeat: no-repeat; padding: .05rem; border: solid 1px #fff; margin-bottom: .1rem; border-radius: .03rem; box-shadow: 0 .02rem .04rem rgba(0,0,0,.15); overflow: auto; min-height: 1rem; width: 3rem;box-sizing:border-box; }
+        .imglist .item img {width:100%;position: absolute; left: 50%; top: 50%; transform: translate3d(-50%,-50%,0); }
     </style>
 </head>
 <body>
@@ -50,6 +47,7 @@
     </div>
     <script src="../src/ImageView-1.0.2.js?000"></script>
     <script>
+        var titlebar = document.querySelector('.titlebar');
         var ImgList = document.querySelector('#ImgList');
         //删除事件
         ImageView.on('delete', function (data) {
@@ -60,6 +58,13 @@
             ImageView.show({
                 pattern: 'default',
                 selector: 'img,.item',
+            });
+        });
+        titlebar.addEventListener('click', function () {
+            ImageView.show({
+                pattern: 'default',
+                selector: '#ImgList img,.item',
+                isFindTargettoImageList: false
             });
         });
     </script>
