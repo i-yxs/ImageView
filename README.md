@@ -15,7 +15,7 @@
   clippingRadius:0,             //裁剪图片的圆角数值(默认：0)
   clippingBackground:'',        //裁剪后输出的图片背景(默认：透明)
   clippingImportSuffix:'png'    //裁剪后输出的图片后缀(默认：png 可选：jpge)
-  isFindTargettoImageList:true  //当使用dom事件触发显示时，是否查找目标元素是否存在于图片列表中
+  isFindTargettoImageList:true  //当使用dom事件触发显示时，是否查找目标元素是否存在于图片列表中(默认：true 可选：false)
 }
 ```
 ### .close()
