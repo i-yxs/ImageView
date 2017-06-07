@@ -1573,6 +1573,7 @@
                         _Element.iv_block.addClass('iv_hide');
                         _Element.iv_animate.addClass('iv_hide').setAttribute('data-state', '');
                         _Element.container.setAttribute('data-state', 'default');
+                        s.dispatchEvent('show');
                     }, 200);
                 }, 40);
             };
@@ -1622,6 +1623,7 @@
                     _Element.iv_animate.addClass('iv_hide').setAttribute('data-state', '');
                     _Element.container.setAttribute('data-state', 'default');
                     _Element.container.removeClass('iv_fade_out').remove();
+                    s.dispatchEvent('close');
                 }, 200);
             }, 40);
         },
