@@ -29,3 +29,28 @@
 
 ### .indexPage(index)
 `(default、edit)模式时，前进到指定页码数`
+
+事件：
+--------------------------------------
+### 用法
+```javascript
+//绑定事件.on(...)或.addEventListener(...)
+ImageView.on('事件名', function (data) {
+  ...
+});
+//解除事件.off(...)或.removeEventListener(...)
+ImageView.off('事件名', function (data) {
+  ...
+});
+```
+### 'show'
+`显示动画完成时触发`
+### 'close'
+`关闭动画完成时触发`
+### 'pageing'
+`进行翻页动作时触发`
+### 'delete'
+`编辑模式时点击删除按钮时触发`
+### 'clipping'
+`剪裁模式时点击完成按钮时触发`
+
