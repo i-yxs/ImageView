@@ -40,7 +40,7 @@
   绑定事件
   .on(...) 或
   .addEventListener(...) 或
-  .on+首字母大写事件名，如'onShow'=function(){...}
+  .on+首字母大写事件名，如.onShow=function(){...}
 */
 ImageView.on('事件名', function (data) {
   ...
