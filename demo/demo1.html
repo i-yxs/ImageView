@@ -49,9 +49,11 @@
     <script>
         var titlebar = document.querySelector('.titlebar');
         var ImgList = document.querySelector('#ImgList');
-        //删除事件
-        ImageView.on('delete', function (data) {
-            console.log(data);
+        //翻页时调整滚动条居中显示目标图片
+        ImageView.on('pageing', function () {
+            var vimg = ImageView.vImageList[ImageView.page - 1];
+            var offsetTop = vimg.target.getBoundingClientRect().top + document.body.scrollTop;
+            document.body.scrollTop = offsetTop - (window.innerHeight - vimg.target.clientHeight) / 2;
         });
         //如果使用交互事件触发显示，选择器只会根据selector参数查找事件的绑定者的子元素
         ImgList.addEventListener('click', function () {

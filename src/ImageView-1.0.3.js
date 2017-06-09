@@ -390,6 +390,8 @@
         s.src = '';
         //目标元素
         s.target = null;
+        //目标元素数据
+        s.targetData = {};
         //位置
         s.position = { x: 0, y: 0 };
         //缩放前的位置
@@ -853,6 +855,7 @@
             page--;
         }
         s.indexPage(page);
+        s.dispatchEvent('prevPage');
     };
     //下一页
     ImageView.prototype.nextPage = function () {
@@ -862,6 +865,7 @@
             page++;
         }
         s.indexPage(page);
+        s.dispatchEvent('nextPage');
     };
     //跳转到指定页
     ImageView.prototype.indexPage = function (index) {
@@ -881,6 +885,7 @@
             _PageFx.start();
         }
         if (page !== s.page) {
+            s.dispatchEvent('pageing');
             _Interaction.pageingSign = true;
         }
         if (page === s.page) {
@@ -1064,7 +1069,7 @@
                     } else {
                         _Element.container.addClass('iv_full');
                     }
-                    if (ImageView.pattern === 'default') {
+                    if (ImageView.pattern === 'default' && !_Interaction.pageingSign) {
                         ImageView.close();
                     }
                 }
@@ -1778,6 +1783,10 @@
                     displayRectbox.retpos[0][0],
                     displayRectbox.retpos[0][1] + displayRectbox.visibleHeight,
             ];
+            vimg.targetData.visibleTop = displayRectbox.visibleTop;
+            vimg.targetData.visibleLeft = displayRectbox.visibleLeft;
+            vimg.targetData.visibleWidth = displayRectbox.visibleWidth;
+            vimg.targetData.visibleHeight = displayRectbox.visibleHeight;
             return displayRectbox;
         },
         //获取当前页目标图片数据
@@ -1857,6 +1866,10 @@
                     displayRectbox.retpos[0][0],
                     displayRectbox.retpos[0][1] + displayRectbox.visibleHeight,
             ];
+            vimg.targetData.visibleTop = displayRectbox.visibleTop;
+            vimg.targetData.visibleLeft = displayRectbox.visibleLeft;
+            vimg.targetData.visibleWidth = displayRectbox.visibleWidth;
+            vimg.targetData.visibleHeight = displayRectbox.visibleHeight;
             return displayRectbox;
         },
         //加载图片
