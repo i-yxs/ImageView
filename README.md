@@ -36,11 +36,20 @@
 --------------------------------------
 ### 用法
 ```javascript
-//绑定事件.on(...)或.addEventListener(...)或.on+首字母大写事件名，如'onShow'=function(){...}
+/*
+  绑定事件
+  .on(...) 或
+  .addEventListener(...) 或
+  .on+首字母大写事件名，如'onShow'=function(){...}
+*/
 ImageView.on('事件名', function (data) {
   ...
 });
-//解除事件.off(...)或.removeEventListener(...)
+/*
+  解除事件
+  .off(...) 或
+  .removeEventListener(...)
+*/
 ImageView.off('事件名', function (data) {
   ...
 });
