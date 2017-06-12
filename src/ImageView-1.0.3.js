@@ -120,24 +120,24 @@
         s.publicName2 = '__ListenersCallbackList__';
     };
     //注册监听器
-    Listeners.prototype.register = function (object) {
+    Listeners.prototype.register = function (obj) {
         var s = this;
-        if (!object[s.publicName1]) {
-            object[s.publicName1] = true;
-            object[s.publicName2] = object[s.publicName2] || {};
-            object.dispatchEvent = s.dispatchEvent.bind(object);
-            object.on = object.addEventListener = s.addEventListener.bind(object);
-            object.off = object.removeEventListener = s.removeEventListener.bind(object);
+        if (!obj[s.publicName1]) {
+            obj[s.publicName1] = true;
+            obj[s.publicName2] = obj[s.publicName2] || {};
+            obj.dispatchEvent = s.dispatchEvent.bind(obj);
+            obj.on = obj.addEventListener = s.addEventListener.bind(obj);
+            obj.off = obj.removeEventListener = s.removeEventListener.bind(obj);
         }
     };
     //删除监听器
-    Listeners.prototype.remove = function (object) {
+    Listeners.prototype.remove = function (obj) {
         var s = this;
-        object[s.publicName1] = false;
-        object[s.publicName2] = null;
-        object.dispatchEvent = null;
-        object.on = object.addEventListener = null;
-        object.off = object.removeEventListener = null;
+        obj[s.publicName1] = false;
+        obj[s.publicName2] = null;
+        obj.dispatchEvent = null;
+        obj.on = obj.addEventListener = null;
+        obj.off = obj.removeEventListener = null;
     };
     //事件派送
     Listeners.prototype.dispatchEvent = function (type, data, phase) {
@@ -440,7 +440,7 @@
     //居中显示
     Vimg.prototype.centered = function () {
         var s = this;
-        s.left = ImageView.width * s.index + s.index * s.imageMargin;
+        s.left = (ImageView.width + s.imageMargin) * s.index;
         s.position.x = Math.round((ImageView.width - s.width) / 2);
         s.position.y = Math.round((ImageView.height - s.height) / 2);
         s.adjustPosition();
@@ -484,14 +484,14 @@
         }
     };
     //调整显示位置
-    Vimg.prototype.adjustPosition = function (isinit) {
+    Vimg.prototype.adjustPosition = function () {
         var s = this;
         var x = s.position.x;
         var y = s.position.y;
         var scale = s.scale;
         var rotate = s.rotate;
         var isAnimate = false;
-        if (isinit) {
+        if (arguments[0]) {
             //还原到初始状态
             scale = 1;
             rotate = 0;
