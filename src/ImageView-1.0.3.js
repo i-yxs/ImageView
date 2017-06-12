@@ -855,7 +855,6 @@
             page--;
         }
         s.indexPage(page);
-        s.dispatchEvent('prevPage');
     };
     //下一页
     ImageView.prototype.nextPage = function () {
@@ -865,7 +864,6 @@
             page++;
         }
         s.indexPage(page);
-        s.dispatchEvent('nextPage');
     };
     //跳转到指定页
     ImageView.prototype.indexPage = function (index) {
@@ -1541,6 +1539,9 @@
             var vimg = s.vImageList[pageIndex];
             //当前页图片加载完成后显示
             vimg.onLoad = function () {
+                //当前宽高
+                var imageWidth = vimg.width * vimg.scale;
+                var imageHeight = vimg.height * vimg.scale;
                 //根据元素类型获取显示数据
                 if (vimg.target.nodeName.toLowerCase() === 'img') {
                     var rectbox = _Private.getTargetImagesData();
@@ -1561,9 +1562,10 @@
                 _Element.iv_animate.removeClass('iv_hide');
                 //延迟动画
                 setTimeout(function () {
+                    var scale = imageWidth / rectbox.displayWidth;
                     _Element.container.setAttribute('data-state', 'in');
                     _Element.iv_animate.css({
-                        transform: 'translate3d(' + vimg.position.x + 'px, ' + vimg.position.y + 'px, 0) scale3d(' + rectbox.scale + ',' + rectbox.scale + ',1)'
+                        transform: 'translate3d(' + vimg.position.x + 'px, ' + vimg.position.y + 'px, 0) scale3d(' + scale + ',' + scale + ',1)'
                     });
                     _Element.iv_img.css({ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)' });
                     if (s.pattern === 'clipping') {
@@ -1591,6 +1593,9 @@
             var s = ImageView;
             var pageIndex = s.page - 1;
             var vimg = s.vImageList[pageIndex];
+            //当前宽高
+            var imageWidth = vimg.width * vimg.scale;
+            var imageHeight = vimg.height * vimg.scale;
             //根据元素类型获取显示数据
             if (vimg.target.nodeName.toLowerCase() === 'img') {
                 var rectbox = _Private.getTargetImagesData();
@@ -1599,8 +1604,8 @@
             }
             //动画前的准备
             _Element.iv_animate.css({
-                width: vimg.width + 'px',
-                height: vimg.height + 'px',
+                width: imageWidth + 'px',
+                height: imageHeight + 'px',
                 transform: 'translate3d(' + vimg.position.x + 'px, ' + vimg.position.y + 'px, 0) scale3d(1,1,1)'
             });
             _Element.iv_img.css({
@@ -1611,7 +1616,7 @@
             _Element.iv_animate.removeClass('iv_hide');
             //动画开始
             setTimeout(function () {
-                var scale = rectbox.displayWidth / vimg.width;
+                var scale = rectbox.displayWidth / imageWidth;
                 _Element.container.setAttribute('data-state', 'out');
                 _Element.iv_animate.css({
                     transform: 'translate3d(' + rectbox.displayLeft + 'px, ' + rectbox.displayTop + 'px, 0) scale3d(' + scale + ',' + scale + ',1)'
@@ -1764,7 +1769,6 @@
             if (ratioY !== undefined) {
                 displayRectbox.displayTop = (displayRectbox.visibleHeight - displayRectbox.displayHeight) * ratioY + displayRectbox.visibleTop;
             }
-            displayRectbox.scale = vimg.width / displayRectbox.displayWidth;
             //可见区域相对于真实区域的矩形坐标点
             displayRectbox.retpos = [];
             displayRectbox.retpos[0] = [
@@ -1847,7 +1851,6 @@
                 }
                 parentNode = parentNode.parentNode;
             }
-            displayRectbox.scale = vimg.width / displayRectbox.displayWidth;
             //可见区域相对于真实区域的矩形坐标点
             displayRectbox.retpos = [];
             displayRectbox.retpos[0] = [
