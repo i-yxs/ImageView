@@ -1894,11 +1894,13 @@
                     item.adaptContainerSize();
                     item.centered();
                     item.useDataToImage();
+                    item.removeClass('iv_hide');
                     item.dispatchEvent('load');
                 };
                 item.image = image;
                 item.index = index++;
                 item.imageMargin = ImageView.imageMargin;
+                item.addClass('iv_hide');
                 _Element.iv_viewBox.appendChild(image);
             });
         },
