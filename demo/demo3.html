@@ -4,18 +4,18 @@
     <title></title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <style>
-        html { font-size: 100px; font-size: calc(100vw/3.2); }
+        html { font-size: 100px; font-size: calc(100vw/3.2); -webkit-tap-highlight-color: transparent; }
         body { font-size: .14rem; }
         body { background: #f5f5f5; padding: 0; margin: 0; color: #333; }
         .titlebar { background: #fff; line-height: .18rem; padding: .12rem 0; text-align: center; font-size: .15rem; box-shadow: 0 .01rem .02rem rgba(0,0,0,.15);}
-        .imglist{padding:.1rem .08rem;padding-right:0;}
-        .imglist .item { width:.7rem;height:.7rem;float:left;margin:0 .08rem .08rem 0; border-radius: .03rem;background-position:50% 50%;background-size:cover; }
-        .imglist .item img{width:100%;}
+        .imagelist { padding: .1rem .08rem; padding-right: 0; user-select: none; -webkit-user-select: none; }
+        .imagelist .item { width: .7rem; height: .7rem; float: left; margin: 0 .08rem .08rem 0; border-radius: .03rem; background-position: 50% 50%; background-size: cover; }
+        .imagelist .item img { width: 100%; }
     </style>
 </head>
 <body>
     <div class="titlebar">编辑模式</div>
-    <div class="imglist" id="ImgList">
+    <div class="imagelist" id="ImgList">
         <div class="item" style="background-image: url(img/014IR151-5.jpg)"></div>
         <div class="item" style="background-image: url(img/66R58PICKvP_1024.jpg)"></div>
         <div class="item" style="background-image: url(img/sfe4r5sf54s5fs45df.jpg)"></div>

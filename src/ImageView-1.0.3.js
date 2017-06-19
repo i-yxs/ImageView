@@ -695,7 +695,7 @@
             _ScrollFx_X.start();
         }
         //y轴动画
-        if (Math.abs(speed.y) > _ScrollFx_X.minSpeed) {
+        if (Math.abs(speed.y) > _ScrollFx_Y.minSpeed) {
             //y轴动画
             _ScrollFx_Y.init({ y: s.position.y });
             _ScrollFx_Y.initSpeed = speed.y;
@@ -758,7 +758,8 @@
             };
             _ScrollFx_Y.start();
         }
-        if (speed.x === 0 && speed.y === 0) {
+        if (Math.abs(speed.x) <= _ScrollFx_X.minSpeed &&
+            Math.abs(speed.y) <= _ScrollFx_Y.minSpeed) {
             ImageView.indexPage(ImageView.page);
         }
     };
@@ -877,7 +878,7 @@
             s.page = index;
         }
         var end = -s.width * (s.page - 1) - (s.imageMargin * (s.page - 1));
-        if (_Private.viewBoxPositionX - end) {
+        if (_ScrollFx_X.state != 'running' && _Private.viewBoxPositionX - end) {
             _PageFx.init({ x: _Private.viewBoxPositionX }, { x: end });
             _PageFx.duration = 300;
             _PageFx.onUpdate = function (data) {
