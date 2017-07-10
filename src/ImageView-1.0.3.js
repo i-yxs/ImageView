@@ -1895,13 +1895,13 @@
                     item.adaptContainerSize();
                     item.centered();
                     item.useDataToImage();
-                    item.target.removeClass('iv_hide');
+                    item.image.removeClass('iv_hide');
                     item.dispatchEvent('load');
                 };
                 item.image = image;
                 item.index = index++;
                 item.imageMargin = ImageView.imageMargin;
-                item.target.addClass('iv_hide');
+                item.image.addClass('iv_hide');
                 _Element.iv_viewBox.appendChild(image);
             });
         },
