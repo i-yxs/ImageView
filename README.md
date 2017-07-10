@@ -2,7 +2,16 @@
 (不依赖任何库，兼容主流浏览器)
 
 --------------------------------------
-方法：
+效果图：
+--------------------------------------
+### 浏览模式
+![](https://github.com/qq597392321/ImageView/blob/master/example/gif/1.gif) 
+### 编辑模式
+![](https://github.com/qq597392321/ImageView/blob/master/example/gif/2.gif) 
+### 裁剪模式
+![](https://github.com/qq597392321/ImageView/blob/master/example/gif/3.gif) 
+
+文档：
 --------------------------------------
 ### .show({...}) 
 ```javascript
