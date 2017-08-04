@@ -4,9 +4,9 @@
     <title></title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <style>
-        html { font-size: 100px; font-size: calc(100vw/3.2); -webkit-tap-highlight-color: transparent; }
-        body { font-size: .14rem; }
-        body { background: #f5f5f5; padding: 0; margin: 0; color: #333; }
+        html { font-size: 31.25vw; -webkit-tap-highlight-color: transparent; }
+        html, body { position: absolute; left: 0; top: 0; bottom: 0; right: 0; }
+        body { margin: 0 auto; background: #f1f1f1; color: #333; font-family: '微软雅黑'; font-size: .14rem; -webkit-tap-highlight-color: transparent; }
         .titlebar { background: #fff; line-height: .18rem; padding: .12rem 0; text-align: center; font-size: .15rem; box-shadow: 0 .01rem .02rem rgba(0,0,0,.15); }
         .imglist { padding: .1rem; }
         .imglist .item { position: relative; background-color: #fff; background-size: cover; background-position:center; background-repeat: no-repeat; padding: .05rem; border: solid 1px #fff; margin-bottom: .1rem; border-radius: .03rem; box-shadow: 0 .02rem .04rem rgba(0,0,0,.15); overflow: auto; min-height: 1rem; width: 3rem;box-sizing:border-box; }
@@ -46,6 +46,26 @@
         </div>
     </div>
     <script src="../src/ImageView-1.0.3.js"></script>
+    <script>
+        //动态改变根元素字体大小
+        (function () {
+            function resize() {
+                var except = ['input', 'select', 'textarea'];
+                if (except.indexOf(document.activeElement.nodeName.toLowerCase()) === -1) {
+                    setTimeout(function () {
+                        var width = window.innerWidth;
+                        if (width > window.innerHeight) {
+                            width = window.innerHeight;
+                        }
+                        document.querySelector('html').css({ fontSize: Math.min(window.innerWidth, width) / 3.2 + 'px' });
+                        document.body.css({ maxWidth: width + 'px' });
+                    }, 100);
+                }
+            };
+            resize();
+            window.addEventListener('resize', resize);
+        })();
+    </script>
     <script>
         var titlebar = document.querySelector('.titlebar');
         var ImgList = document.querySelector('#ImgList');

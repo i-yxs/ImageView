@@ -4,9 +4,9 @@
     <title></title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <style>
-        html { font-size: 100px; font-size: calc(100vw/3.2); -webkit-tap-highlight-color: transparent; }
-        body { font-size: .14rem; }
-        body { background: #f5f5f5; padding: 0; margin: 0; color: #333; }
+        html { font-size: 31.25vw; -webkit-tap-highlight-color: transparent; }
+        html, body { position: absolute; left: 0; top: 0; bottom: 0; right: 0; }
+        body { margin: 0 auto; background: #f1f1f1; color: #333; font-family: '微软雅黑'; font-size: .14rem; -webkit-tap-highlight-color: transparent; }
         .titlebar { background: #fff; line-height: .18rem; padding: .12rem 0; text-align: center; font-size: .15rem; box-shadow: 0 .01rem .02rem rgba(0,0,0,.15);}
         .imagelist { padding: .1rem .08rem; padding-right: 0; user-select: none; -webkit-user-select: none; }
         .imagelist .item { width: .7rem; height: .7rem; float: left; margin: 0 .08rem .08rem 0; border-radius: .03rem; background-position: 50% 50%; background-size: cover; }
@@ -25,6 +25,26 @@
         <div class="item" style="background-image: url(img/dsa32f46sf5s4f5s54fsdf.jpg)"></div>
     </div>
     <script src="../src/ImageView-1.0.3.js"></script>
+    <script>
+        //动态改变根元素字体大小
+        (function () {
+            function resize() {
+                var except = ['input', 'select', 'textarea'];
+                if (except.indexOf(document.activeElement.nodeName.toLowerCase()) === -1) {
+                    setTimeout(function () {
+                        var width = window.innerWidth;
+                        if (width > window.innerHeight) {
+                            width = window.innerHeight;
+                        }
+                        document.querySelector('html').css({ fontSize: Math.min(window.innerWidth, width) / 3.2 + 'px' });
+                        document.body.css({ maxWidth: width + 'px' });
+                    }, 100);
+                }
+            };
+            resize();
+            window.addEventListener('resize', resize);
+        })();
+    </script>
     <script>
         var ImgList = document.querySelector('#ImgList');
         //删除事件

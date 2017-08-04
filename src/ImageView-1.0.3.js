@@ -929,7 +929,7 @@
         //记录上一次手指移动的方向
         lastMoveDirection: null,
         //手指按下
-        touchstart: function (e) {
+        down: function (e) {
             var touch = {
                 clientX: e.changedTouches[0].clientX,
                 clientY: e.changedTouches[0].clientY,
@@ -969,7 +969,7 @@
             e.preventDefault();
         },
         //手指移动中
-        touchmove: function (e) {
+        move: function (e) {
             if (_Interaction.downTouchList.length) {
                 var touch = [];
                 for (var i = 0; i < e.touches.length; i++) {
@@ -1044,7 +1044,7 @@
             }
         },
         //手指抬起
-        touchend: function (e) {
+        up: function (e) {
             if (_Interaction.downTouchList.length) {
                 var touch = {
                     clientX: e.changedTouches[0].clientX,
@@ -1500,10 +1500,37 @@
                     });
                 }
             });
-            //绑定touch事件
-            _Element.iv_view.addEventListener('touchstart', _Interaction.touchstart, { passive: false });
-            _Element.iv_view.addEventListener('touchmove', _Interaction.touchmove, { passive: false });
-            _Element.iv_view.addEventListener('touchend', _Interaction.touchend, { passive: false });
+            //绑定交互事件
+            if ('ontouchend' in document) {
+                _Element.iv_view.addEventListener('touchstart', _Interaction.down, { passive: false });
+                _Element.iv_view.addEventListener('touchmove', _Interaction.move, { passive: false });
+                _Element.iv_view.addEventListener('touchend', _Interaction.up, { passive: false });
+            } else {
+                _Element.iv_view.addEventListener('mousedown', function (e) {
+                    e.changedTouches = [{
+                        clientX: e.clientX,
+                        clientY: e.clientY,
+                        identifier: 99999
+                    }];
+                    _Interaction.down(e);
+                }, { passive: false });
+                _Element.iv_view.addEventListener('mousemove', function (e) {
+                    e.touches = [{
+                        clientX: e.clientX,
+                        clientY: e.clientY,
+                        identifier: 99999
+                    }];
+                    _Interaction.move(e);
+                }, { passive: false });
+                _Element.iv_view.addEventListener('mouseup', function (e) {
+                    e.changedTouches = [{
+                        clientX: e.clientX,
+                        clientY: e.clientY,
+                        identifier: 99999
+                    }];
+                    _Interaction.up(e);
+                }, { passive: false });
+            }
             //关闭动画完成回调事件
             s.on('close', function () {
                 //还原初始状态
