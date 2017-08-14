@@ -448,9 +448,9 @@
     //适应父容器大小
     Vimg.prototype.adaptContainerSize = function () {
         var s = this;
-        var width = Math.round(_Private.displayRectBox.height / s.naturalHeight * s.naturalWidth);
-        var height = Math.round(_Private.displayRectBox.width / s.naturalWidth * s.naturalHeight);
         if (ImageView.pattern === 'clipping') {
+            var width = Math.round(_Private.displayRectBox.height / s.naturalHeight * s.naturalWidth);
+            var height = Math.round(_Private.displayRectBox.width / s.naturalWidth * s.naturalHeight);
             if (width >= _Private.displayRectBox.width) {
                 s.width = width;
                 s.height = _Private.displayRectBox.height;
@@ -459,13 +459,14 @@
                 s.height = height;
             }
         } else {
-            if (width <= _Private.displayRectBox.width) {
-                s.width = width;
-                s.height = _Private.displayRectBox.height;
-            } else if (height <= _Private.displayRectBox.height) {
-                s.width = _Private.displayRectBox.width;
-                s.height = height;
+            var width = Math.min(_Private.displayRectBox.width, s.naturalWidth);
+            var height = Math.round(width / s.naturalWidth * s.naturalHeight);
+            if (height > _Private.displayRectBox.height) {
+                height = _Private.displayRectBox.height;
+                width = Math.round(height / s.naturalHeight * s.naturalWidth);
             }
+            s.width = width;
+            s.height = height;
         }
         s.maxScale = 2;
     };
@@ -769,8 +770,8 @@
     function ImageView() {
         var s = this;
         //容器大小
-        s.width = window.innerWidth;
-        s.height = window.innerHeight;
+        s.width = 0;
+        s.height = 0;
         //当前页
         s.page = 1;
         //图片列表
@@ -811,8 +812,8 @@
         }
         //显示前的准备
         if (isDisplay) {
-            //加载图片
-            _Private.loadImages(s.vImageList);
+            s.width = window.innerWidth;
+            s.height = window.innerHeight;
             //添加元素到body
             document.body.appendChild(_Element.container);
             _Element.container.removeClass('iv_hide').setAttribute('data-pattern', s.pattern);
@@ -835,9 +836,11 @@
             } else {
                 _Private.displayRectBox.x = 0;
                 _Private.displayRectBox.y = 0;
-                _Private.displayRectBox.width = ImageView.width;
-                _Private.displayRectBox.height = ImageView.height;
+                _Private.displayRectBox.width = s.width;
+                _Private.displayRectBox.height = s.height;
             }
+            //加载图片
+            _Private.loadImages(s.vImageList);
         }
     };
     //关闭
@@ -1535,6 +1538,27 @@
             s.on('close', function () {
                 //还原初始状态
                 s.restore();
+            });
+            //浏览器窗口大小发生改变时调整显示
+            window.addEventListener('resize', function () {
+                s.width = window.innerWidth;
+                s.height = window.innerHeight;
+                if (s.pattern === 'clipping') {
+                    _Private.clippingMaskAdaptContainerSize();
+                } else {
+                    _Private.displayRectBox.x = 0;
+                    _Private.displayRectBox.y = 0;
+                    _Private.displayRectBox.width = s.width;
+                    _Private.displayRectBox.height = s.height;
+                }
+                s.vImageList.forEach(function (item) {
+                    item.adaptContainerSize();
+                    item.centered();
+                    item.useDataToImage();
+                });
+                //设置当前页为选中状态
+                _Private.viewBoxPositionX = -(s.width + s.imageMargin) * (s.page - 1);
+                _Private.setViewBoxPositionX();
             });
         },
         //无动画显示
