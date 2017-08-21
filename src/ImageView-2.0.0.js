@@ -2079,7 +2079,7 @@
                 pattern: 'default',
                 selector: '',
                 imageMargin: 10,
-                initDisplaySize: 'cover',
+                initDisplaySize: 'contain',
                 initDisplayPositionX: 'center',
                 initDisplayPositionY: 'center',
                 clippingWidth: s.width,
