@@ -19,6 +19,29 @@
   pattern:'default',            //模式(默认：default 可选：edit(编辑) clipping(剪裁))
   selector:'',                  //选择器(如：'#ImageList img')
   imageMargin:10,               //图片间距(默认：10)
+  /*
+      图像的初始显示尺寸(裁剪模式不可用)
+        默认：cover
+        cover (图像扩展至足够大，使图像完全覆盖显示区域) 
+        contain (图像扩展至最大尺寸，使其宽度和高度完全适应显示区域)
+  */
+  initDisplaySize:'';
+  /*
+      图像的初始水平显示位置(裁剪模式不可用)
+        默认：center
+        top (仅当initDisplaySize='cover' 时生效)
+        center (居中显示)
+        bottom (仅当initDisplaySize='cover' 时生效)
+  */
+  initDisplayPositionX = null;
+  /*
+      图像的初始垂直显示位置(裁剪模式不可用)
+        默认：center
+        left (仅当initDisplaySize='cover' 时生效)
+        center (居中显示)
+        rihgt (仅当initDisplaySize='cover' 时生效)
+  */
+  initDisplayPositionY = null;
   isGestureRotate:true,         //手势事件是否能进行旋转(默认：false 可选：true)
   clippingWidth:[Number],       //裁剪后输出的图片宽度(默认：容器宽度)
   clippingHeight:[Number],      //裁剪后输出的图片高度(默认：容器宽度)
