@@ -80,12 +80,15 @@
             ImageView.show({
                 pattern: 'default',
                 selector: 'img,.item',
+                initDisplayPositionX: 'center',
+                initDisplayPositionY: 'center',
             });
         });
         titlebar.addEventListener('click', function () {
             ImageView.show({
                 pattern: 'default',
                 selector: '#ImgList img,.item',
+                initDisplaySize: 'contain',
                 isFindTargettoImageList: false
             });
         });

@@ -368,7 +368,6 @@
     //还原缩放状态动画
     var _RestoreFx = new Animation();
     _RestoreFx.on('complete', function () {
-        _Interaction.pageingSign = false;
         _RestoreFx.onUpdate = null;
     });
     //还原图片位置动画
@@ -420,8 +419,6 @@
         s.maxScale = 1;
         //最小缩放倍数
         s.minScale = 1;
-        //图片间距
-        s.imageMargin = 20;
         //位于存放列表下标位置
         s.index = 0;
         //是否被选中
@@ -437,38 +434,75 @@
         //注册监听器
         Listeners.register(s);
     };
-    //居中显示
-    Vimg.prototype.centered = function () {
+    //自定义适应
+    Vimg.prototype.customAdaption = function () {
         var s = this;
-        s.left = (ImageView.width + s.imageMargin) * s.index;
-        s.position.x = Math.round((ImageView.width - s.width) / 2);
-        s.position.y = Math.round((ImageView.height - s.height) / 2);
-        s.adjustPosition();
-    };
-    //适应父容器大小
-    Vimg.prototype.adaptContainerSize = function () {
-        var s = this;
+        var displaySize = arguments[0] || ImageView.initDisplaySize;
+        var displayPositionX = arguments[1] || ImageView.initDisplayPositionX;
+        var displayPositionY = arguments[2] || ImageView.initDisplayPositionY;
+        //裁剪模式
         if (ImageView.pattern === 'clipping') {
-            var width = Math.round(_Private.displayRectBox.height / s.naturalHeight * s.naturalWidth);
-            var height = Math.round(_Private.displayRectBox.width / s.naturalWidth * s.naturalHeight);
-            if (width >= _Private.displayRectBox.width) {
-                s.width = width;
-                s.height = _Private.displayRectBox.height;
-            } else if (height >= _Private.displayRectBox.height) {
-                s.width = _Private.displayRectBox.width;
-                s.height = height;
-            }
-        } else {
-            var width = Math.min(_Private.displayRectBox.width, s.naturalWidth);
-            var height = Math.round(width / s.naturalWidth * s.naturalHeight);
-            if (height > _Private.displayRectBox.height) {
-                height = _Private.displayRectBox.height;
-                width = Math.round(height / s.naturalHeight * s.naturalWidth);
-            }
-            s.width = width;
-            s.height = height;
+            displaySize = 'cover';
+            displayPosition = 'center';
         }
-        s.maxScale = 2;
+        //调整大小
+        var width = Math.min(_Private.displayRectBox.width, s.naturalWidth);
+        var height = Math.round(width / s.naturalWidth * s.naturalHeight);
+        if (height > _Private.displayRectBox.height) {
+            height = _Private.displayRectBox.height;
+            width = Math.round(height / s.naturalHeight * s.naturalWidth);
+        }
+        s.width = width;
+        s.height = height;
+        s.maxScale = s.naturalWidth / s.width;
+        s.left = (ImageView.width + ImageView.imageMargin) * s.index;
+        //根据真实尺寸调整缩放大小
+        switch (displaySize) {
+            case 'cover':
+                var width = Math.round(_Private.displayRectBox.height / s.naturalHeight * s.naturalWidth);
+                var height = Math.round(_Private.displayRectBox.width / s.naturalWidth * s.naturalHeight);
+                if (width >= _Private.displayRectBox.width) {
+                    s.scale = Math.min(s.maxScale, width / s.width);
+                } else if (height >= _Private.displayRectBox.height) {
+                    s.scale = Math.min(s.maxScale, height / s.height);
+                }
+                break;
+            case 'contain':
+            default:
+                s.scale = 1;
+                break;
+        }
+        //调整位置
+        var imageWidth = s.width * s.scale;
+        var imageHeight = s.height * s.scale;
+        switch (displayPositionX) {
+            case 'left':
+                s.position.x = 0;
+                break;
+            case 'rigth':
+                s.position.x = ImageView.width - imageWidth;
+                break;
+            case 'center':
+            default:
+                s.position.x = Math.round((ImageView.width - imageWidth) / 2);
+                break;
+        }
+        switch (displayPositionY) {
+            case 'top':
+                s.position.y = 0;
+                break;
+            case 'bottom':
+                s.position.x = ImageView.height - imageHeight;
+                break;
+            case 'center':
+            default:
+                s.position.y = Math.round((ImageView.height - imageHeight) / 2);
+                break;
+        }
+    };
+    //默认适应
+    Vimg.prototype.defaultAdaption = function () {
+        this.customAdaption('contain', 'center');
     };
     //应用数据到dom元素
     Vimg.prototype.useDataToImage = function () {
@@ -491,9 +525,7 @@
         var y = s.position.y;
         var scale = s.scale;
         var rotate = s.rotate;
-        var isAnimate = false;
         if (arguments[0]) {
-            //还原到初始状态
             scale = 1;
             rotate = 0;
             x = (ImageView.width - s.width) / 2;
@@ -575,13 +607,7 @@
             _RestoreFx_Y.start();
         }
         //初始化动画
-        _RestoreFx.init({
-            scale: s.scale,
-            rotate: s.rotate
-        }, {
-            scale: scale,
-            rotate: rotate
-        });
+        _RestoreFx.init({ scale: s.scale, rotate: s.rotate }, { scale: scale, rotate: rotate });
         _RestoreFx.duration = 300;
         _RestoreFx.onUpdate = function (data) {
             s.scale = data.scale;
@@ -611,6 +637,10 @@
         var incrementY = 1;
         //当前页数显示盒子的初始位置
         var ViewBoxInitDataX = -(ImageView.width + ImageView.imageMargin) * (ImageView.page - 1);
+        //如果图片宽度小于容器宽度，不进行惯性动画
+        if (_Private.displayRectBox.width >= imageWidth) {
+            speed.x = 0;
+        }
         //x轴动画
         if (Math.abs(speed.x) > _ScrollFx_X.minSpeed) {
             _ScrollFx_X.init({ x: s.position.x });
@@ -782,6 +812,29 @@
         s.pattern = null;
         //图片间距(默认：10)
         s.imageMargin = null;
+        /*
+            图像的初始显示尺寸(裁剪模式不可用)
+                默认：cover
+                cover (图像扩展至足够大，使图像完全覆盖显示区域) 
+                contain (图像扩展至最大尺寸，使其宽度和高度完全适应显示区域)
+        */
+        s.initDisplaySize = null;
+        /*
+            图像的初始水平显示位置(裁剪模式不可用)
+                默认：center
+                top (仅当initDisplaySize=0时生效)
+                center (居中显示)
+                bottom (仅当initDisplaySize=0时生效)
+        */
+        s.initDisplayPositionX = null;
+        /*
+            图像的初始垂直显示位置(裁剪模式不可用)
+                默认：center
+                left (仅当initDisplaySize=0时生效)
+                center (居中显示)
+                rihgt (仅当initDisplaySize=0时生效)
+        */
+        s.initDisplayPositionY = null;
         //裁剪后输出的图片宽度(默认：容器宽度)
         s.clippingWidth = null;
         //裁剪后输出的图片高度(默认：容器宽度)
@@ -888,6 +941,10 @@
                 _Private.viewBoxPositionX = data.x;
                 _Private.setViewBoxPositionX();
             };
+            _PageFx.onComplete = function () {
+                s.dispatchEvent('pageend');
+                _Interaction.pageingSign = false;
+            };
             _PageFx.start();
         }
         if (page !== s.page) {
@@ -987,6 +1044,21 @@
                 _Interaction.downTouchList.forEach(function (item, i) {
                     var index = touch.indexOf2(item.identifier, 'identifier');
                     if (index > -1) {
+                        //轴向
+                        var disX = Math.abs(touch[index].clientX - item.clientX);
+                        var disY = Math.abs(touch[index].clientY - item.clientY);
+                        if (disX > disY) {
+                            item.axial = 'x';
+                        } else if (disX < disY) {
+                            item.axial = 'y';
+                        }
+                        if (!item.initAxial) {
+                            if (disX > disY) {
+                                item.initAxial = 'x';
+                            } else if (disX < disY) {
+                                item.initAxial = 'y';
+                            }
+                        }
                         //触点相对于按下时的水平方向
                         if (touch[index].clientX < item.clientX) {
                             item.horDirection = 'left';
@@ -1102,15 +1174,23 @@
             //当前页的图片对象
             var vimg = s.vImageList[s.page - 1];
             //当前宽高
-            var imageWidth = vimg.width * vimg.scale;
-            var imageHeight = vimg.height * vimg.scale;
+            var imageWidth = Math.round(vimg.width * vimg.scale);
+            var imageHeight = Math.round(vimg.height * vimg.scale);
             //当前移动方向
             var direc = _Interaction.downTouchList[0].horDirection;
             //当前页数显示盒子的初始位置
             var vInitX = -(s.width + s.imageMargin) * (s.page - 1);
             //判断滑动模式
-            if (_Private.displayRectBox.width < imageWidth || _Private.displayRectBox.height < imageHeight) {
+            var lockAxial = null;
+            if (_Private.displayRectBox.width < imageWidth) {
                 _Interaction.currentHandle = 'slidescale';
+            } else if (_Private.displayRectBox.height < imageHeight) {
+                if (_Interaction.downTouchList[0].initAxial === 'x') {
+                    lockAxial = 'y';
+                } else if (_Interaction.downTouchList[0].initAxial === 'y') {
+                    lockAxial = 'x';
+                    _Interaction.currentHandle = 'slidescale';
+                }
             }
             //当前位置
             var posX = vimg.firstPosition.x + moveX;
@@ -1136,102 +1216,110 @@
                     posY = maxPosY;
                 }
             } else {
-                if (imageWidth > _Private.displayRectBox.width) {
-                    //边界外左右超出量
-                    var leftBeyond = -posX;
-                    var rightBeyond = maxLeftBeyondX - leftBeyond;
-                    //判断方向
-                    if (direc === 'left') {
-                        if (rightBeyond > 0) {
-                            pageX = vInitX;
-                        } else {
-                            if (pageX <= vInitX) {
-                                posX = -maxLeftBeyondX;
-                                pageX = vInitX + rightBeyond;
-                                if (_Interaction.viewBoxDataX < vInitX) {
-                                    var beyond = _Interaction.viewBoxDataX - vInitX + moveX;
-                                    pageX = vInitX + beyond;
-                                } else {
-                                    //如果开始滑动时不处于边界
-                                    if (s.page == s.vImageList.length ||
-                                        Math.abs(vimg.firstPosition.x) !== imageWidth - s.width) {
-                                        //如果超出边界，应用阻尼效果
-                                        if (_Interaction.viewBoxDataX < vInitX) {
-                                            var beyond = (_Interaction.viewBoxDataX - vInitX) / damping + moveX;
-                                            pageX = vInitX + beyond * damping;
-                                        } else if (pageX < vInitX) {
-                                            pageX = vInitX + rightBeyond * damping;
-                                        }
+                if (lockAxial !== 'x') {
+                    if (_Private.displayRectBox.width < imageWidth) {
+                        //边界外左右超出量
+                        var leftBeyond = -posX;
+                        var rightBeyond = maxLeftBeyondX - leftBeyond;
+                        //判断方向
+                        if (direc === 'left') {
+                            if (rightBeyond > 0) {
+                                pageX = vInitX;
+                            } else {
+                                if (pageX <= vInitX) {
+                                    posX = -maxLeftBeyondX;
+                                    pageX = vInitX + rightBeyond;
+                                    if (_Interaction.viewBoxDataX < vInitX) {
+                                        var beyond = _Interaction.viewBoxDataX - vInitX + moveX;
+                                        pageX = vInitX + beyond;
                                     } else {
-                                        _Interaction.currentHandle = 'slide';
+                                        //如果开始滑动时不处于边界
+                                        if (s.page == s.vImageList.length ||
+                                            Math.abs(vimg.firstPosition.x) !== imageWidth - s.width) {
+                                            //如果超出边界，应用阻尼效果
+                                            if (_Interaction.viewBoxDataX < vInitX) {
+                                                var beyond = (_Interaction.viewBoxDataX - vInitX) / damping + moveX;
+                                                pageX = vInitX + beyond * damping;
+                                            } else if (pageX < vInitX) {
+                                                pageX = vInitX + rightBeyond * damping;
+                                            }
+                                        } else {
+                                            _Interaction.currentHandle = 'slide';
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (direc === 'right') {
+                            if (leftBeyond > 0) {
+                                pageX = vInitX;
+                            } else {
+                                if (pageX >= vInitX) {
+                                    posX = 0;
+                                    pageX = vInitX - leftBeyond;
+                                    if (_Interaction.viewBoxDataX > vInitX) {
+                                        pageX = _Interaction.viewBoxDataX + moveX;
+                                    } else {
+                                        //如果开始滑动时不处于边界
+                                        if (vimg.firstPosition.x !== 0 || s.page == 1) {
+                                            //如果超出边界，应用阻尼效果
+                                            if (_Interaction.viewBoxDataX > vInitX) {
+                                                pageX = (_Interaction.viewBoxDataX / damping + moveX) * damping;
+                                            } else if (pageX > vInitX) {
+                                                pageX = vInitX + (pageX - vInitX) * damping;
+                                            }
+                                        } else {
+                                            _Interaction.currentHandle = 'slide';
+                                        }
                                     }
                                 }
                             }
                         }
-                    } else if (direc === 'right') {
-                        if (leftBeyond > 0) {
-                            pageX = vInitX;
-                        } else {
-                            if (pageX >= vInitX) {
-                                posX = 0;
-                                pageX = vInitX - leftBeyond;
-                                if (_Interaction.viewBoxDataX > vInitX) {
-                                    pageX = _Interaction.viewBoxDataX + moveX;
-                                } else {
-                                    //如果开始滑动时不处于边界
-                                    if (vimg.firstPosition.x !== 0 || s.page == 1) {
-                                        //如果超出边界，应用阻尼效果
-                                        if (_Interaction.viewBoxDataX > vInitX) {
-                                            pageX = (_Interaction.viewBoxDataX / damping + moveX) * damping;
-                                        } else if (pageX > vInitX) {
-                                            pageX = vInitX + (pageX - vInitX) * damping;
-                                        }
-                                    } else {
-                                        _Interaction.currentHandle = 'slide';
-                                    }
-                                }
+                    } else {
+                        //翻页
+                        var lastX = -(s.width + s.imageMargin) * (s.vImageList.length - 1);
+                        //应用
+                        pageX = _Interaction.viewBoxDataX + moveX;
+                        //如果超出边界，应用阻尼效果
+                        if (pageX > 0) {
+                            if (_Interaction.viewBoxDataX > vInitX) {
+                                pageX = (_Interaction.viewBoxDataX / damping + moveX) * damping;
+                            } else {
+                                pageX = pageX * damping;
+                            }
+                        } else if (pageX < lastX) {
+                            if (_Interaction.viewBoxDataX < vInitX) {
+                                var beyond = (_Interaction.viewBoxDataX - vInitX) / damping + moveX;
+                                pageX = vInitX + beyond * damping;
+                            } else {
+                                var beyond = pageX - vInitX;
+                                pageX = vInitX + beyond * damping;
                             }
                         }
+                        posX = vimg.firstPosition.x;
                     }
                 } else {
-                    //翻页
-                    var lastX = -(s.width + s.imageMargin) * (s.vImageList.length - 1);
-                    //应用
-                    pageX = _Interaction.viewBoxDataX + moveX;
-                    //如果超出边界，应用阻尼效果
-                    if (pageX > 0) {
-                        if (_Interaction.viewBoxDataX > vInitX) {
-                            pageX = (_Interaction.viewBoxDataX / damping + moveX) * damping;
-                        } else {
-                            pageX = pageX * damping;
-                        }
-                    } else if (pageX < lastX) {
-                        if (_Interaction.viewBoxDataX < vInitX) {
-                            var beyond = (_Interaction.viewBoxDataX - vInitX) / damping + moveX;
-                            pageX = vInitX + beyond * damping;
-                        } else {
-                            var beyond = pageX - vInitX;
-                            pageX = vInitX + beyond * damping;
-                        }
-                    }
                     posX = vimg.firstPosition.x;
                 }
-                if (imageWidth > _Private.displayRectBox.width || imageHeight > _Private.displayRectBox.height) {
-                    //应用y轴
-                    if (posY > _Private.displayRectBox.y) {
-                        if (vimg.firstPosition.y > _Private.displayRectBox.y) {
-                            var beyond = (vimg.firstPosition.y - _Private.displayRectBox.y) / damping + moveY;
-                            posY = _Private.displayRectBox.y + beyond * damping;
-                        } else {
-                            posY = _Private.displayRectBox.y + (posY - _Private.displayRectBox.y) * damping;
+                if (lockAxial !== 'y') {
+                    if (imageWidth > _Private.displayRectBox.width || imageHeight > _Private.displayRectBox.height) {
+                        //应用y轴
+                        if (posY > _Private.displayRectBox.y) {
+                            if (vimg.firstPosition.y > _Private.displayRectBox.y) {
+                                var beyond = (vimg.firstPosition.y - _Private.displayRectBox.y) / damping + moveY;
+                                posY = _Private.displayRectBox.y + beyond * damping;
+                            } else {
+                                posY = _Private.displayRectBox.y + (posY - _Private.displayRectBox.y) * damping;
+                            }
+                        } else if (posY < maxPosY) {
+                            if (vimg.firstPosition.y < maxPosY) {
+                                var beyond = (vimg.firstPosition.y - maxPosY) / damping + moveY;
+                                posY = maxPosY + beyond * damping;
+                            } else {
+                                posY = maxPosY + (posY - maxPosY) * damping;
+                            }
                         }
-                    } else if (posY < maxPosY) {
-                        if (vimg.firstPosition.y < maxPosY) {
-                            var beyond = (vimg.firstPosition.y - maxPosY) / damping + moveY;
-                            posY = maxPosY + beyond * damping;
-                        } else {
-                            posY = maxPosY + (posY - maxPosY) * damping;
-                        }
+                    } else {
+                        posY = vimg.firstPosition.y;
                     }
                 } else {
                     posY = vimg.firstPosition.y;
@@ -1250,11 +1338,12 @@
             var s = ImageView;
             touch.horDirection = touch.horDirection || _Interaction.lastMoveDirection;
             if (touch.isMove || _Private.viewBoxPositionX % s.width) {
-                //获取手指滑动的速度
-                var speed = _Interaction.getTouchMoveSpeed(10);
                 if (_Interaction.currentHandle === 'slidescale') {
-                    s.vImageList[s.page - 1].scrollScreen(_Interaction.getTouchMoveSpeed(100), touch);
+                    var speed = _Interaction.getTouchMoveSpeed(100);
+                    //惯性动画
+                    s.vImageList[s.page - 1].scrollScreen(speed, touch);
                 } else {
+                    var speed = _Interaction.getTouchMoveSpeed(10);
                     //翻页
                     if (speed.x >= .3 && touch.horDirection === 'right') {
                         s.prevPage();
@@ -1552,8 +1641,7 @@
                     _Private.displayRectBox.height = s.height;
                 }
                 s.vImageList.forEach(function (item) {
-                    item.adaptContainerSize();
-                    item.centered();
+                    item.defaultAdaption();
                     item.useDataToImage();
                 });
                 //设置当前页为选中状态
@@ -1943,15 +2031,17 @@
                     item.isload = true;
                     item.naturalWidth = image.naturalWidth;
                     item.naturalHeight = image.naturalHeight;
-                    item.adaptContainerSize();
-                    item.centered();
+                    if (item.index === ImageView.page - 1) {
+                        item.customAdaption();
+                    } else {
+                        item.defaultAdaption();
+                    }
                     item.useDataToImage();
                     item.image.removeClass('iv_hide');
                     item.dispatchEvent('load');
                 };
                 item.image = image;
                 item.index = index++;
-                item.imageMargin = ImageView.imageMargin;
                 item.image.addClass('iv_hide');
                 _Element.iv_viewBox.appendChild(image);
             });
@@ -1989,12 +2079,15 @@
                 pattern: 'default',
                 selector: '',
                 imageMargin: 10,
+                initDisplaySize: 'cover',
+                initDisplayPositionX: 'center',
+                initDisplayPositionY: 'center',
                 clippingWidth: s.width,
                 clippingHeight: s.height,
                 clippingRadius: 0,
                 clippingBackground: '',
                 clippingImportSuffix: 'png',
-                isGestureRotate: true,
+                isGestureRotate: false,
                 isFindTargettoImageList: true
             };
             for (var name in json) {
