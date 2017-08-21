@@ -822,17 +822,17 @@
         /*
             图像的初始水平显示位置(裁剪模式不可用)
                 默认：center
-                top (仅当initDisplaySize=0时生效)
+                top (仅当initDisplaySize='cover' 时生效)
                 center (居中显示)
-                bottom (仅当initDisplaySize=0时生效)
+                bottom (仅当initDisplaySize='cover' 时生效)
         */
         s.initDisplayPositionX = null;
         /*
             图像的初始垂直显示位置(裁剪模式不可用)
                 默认：center
-                left (仅当initDisplaySize=0时生效)
+                left (仅当initDisplaySize='cover' 时生效)
                 center (居中显示)
-                rihgt (仅当initDisplaySize=0时生效)
+                rihgt (仅当initDisplaySize='cover' 时生效)
         */
         s.initDisplayPositionY = null;
         //裁剪后输出的图片宽度(默认：容器宽度)
