@@ -473,8 +473,8 @@
                 break;
         }
         //调整位置
-        var imageWidth = s.width * s.scale;
-        var imageHeight = s.height * s.scale;
+        var imageWidth = Math.round(s.width * s.scale);
+        var imageHeight = Math.round(s.height * s.scale);
         switch (displayPositionX) {
             case 'left':
                 s.position.x = 0;
@@ -554,8 +554,8 @@
                     scale = s.minScale;
                 }
             }
-            var currentWidth = s.width * scale;
-            var currentHeight = s.height * scale;
+            var currentWidth = Math.round(s.width * scale);
+            var currentHeight = Math.round(s.height * scale);
             if (currentWidth > _Private.displayRectBox.width) {
                 var maxX = -(currentWidth - _Private.displayRectBox.width - _Private.displayRectBox.x);
                 if (x > _Private.displayRectBox.x) {
@@ -622,8 +622,8 @@
         var horDirection = touch.horDirection;
         var verDirection = touch.verDirection;
         //当前宽高
-        var imageWidth = s.width * s.scale;
-        var imageHeight = s.height * s.scale;
+        var imageWidth = Math.round(s.width * s.scale);
+        var imageHeight = Math.round(s.height * s.scale);
         //初始位置
         var initViewBoxPositionX = _Private.viewBoxPositionX;
         var initPositionX = s.position.x;
@@ -799,6 +799,8 @@
     */
     function ImageView() {
         var s = this;
+        //状态
+        s.state = '';
         //容器大小
         s.width = 0;
         s.height = 0;
@@ -1326,8 +1328,8 @@
                 }
             }
             _Interaction.touchPath.push(touch);
-            vimg.position.x = posX;
-            vimg.position.y = posY;
+            vimg.position.x = Math.round(posX);
+            vimg.position.y = Math.round(posY);
             _Private.viewBoxPositionX = pageX;
             //应用数据
             vimg.useDataToImage();
@@ -1630,6 +1632,7 @@
             });
             //浏览器窗口大小发生改变时调整显示
             window.addEventListener('resize', function () {
+
                 s.width = window.innerWidth;
                 s.height = window.innerHeight;
                 if (s.pattern === 'clipping') {
@@ -1686,8 +1689,8 @@
             //当前页图片加载完成后显示
             vimg.onLoad = function () {
                 //当前宽高
-                var imageWidth = vimg.width * vimg.scale;
-                var imageHeight = vimg.height * vimg.scale;
+                var imageWidth = Math.round(vimg.width * vimg.scale);
+                var imageHeight = Math.round(vimg.height * vimg.scale);
                 //根据元素类型获取显示数据
                 if (vimg.target.nodeName.toLowerCase() === 'img') {
                     var rectbox = _Private.getTargetImagesData();
@@ -1739,8 +1742,8 @@
             var pageIndex = s.page - 1;
             var vimg = s.vImageList[pageIndex];
             //当前宽高
-            var imageWidth = vimg.width * vimg.scale;
-            var imageHeight = vimg.height * vimg.scale;
+            var imageWidth = Math.round(vimg.width * vimg.scale);
+            var imageHeight = Math.round(vimg.height * vimg.scale);
             //根据元素类型获取显示数据
             if (vimg.target.nodeName.toLowerCase() === 'img') {
                 var rectbox = _Private.getTargetImagesData();
@@ -2176,7 +2179,7 @@
             var s = ImageView;
             var vimg = s.vImageList[0];
             //当前图片显示宽度
-            var imageWidth = vimg.width * vimg.scale;
+            var imageWidth = Math.round(vimg.width * vimg.scale);
             //根据图片实际大小计算放大倍数
             var magnify = Math.max(vimg.naturalWidth / imageWidth, 1);
             //绘制层
