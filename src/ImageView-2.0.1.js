@@ -799,13 +799,13 @@
     */
     function ImageView() {
         var s = this;
-        //状态
-        s.state = '';
         //容器大小
         s.width = 0;
         s.height = 0;
         //当前页
         s.page = 1;
+        //当前状态(close：关闭 show：显示)
+        s.state = 'close';
         //图片列表
         s.vImageList = null;
         //选择器
@@ -1625,31 +1625,37 @@
                     _Interaction.up(e);
                 }, { passive: false });
             }
+            //显示动画完成回调事件
+            s.on('show', function () {
+                s.state = 'show';
+            });
             //关闭动画完成回调事件
             s.on('close', function () {
+                s.state = 'close';
                 //还原初始状态
                 s.restore();
             });
             //浏览器窗口大小发生改变时调整显示
             window.addEventListener('resize', function () {
-
-                s.width = window.innerWidth;
-                s.height = window.innerHeight;
-                if (s.pattern === 'clipping') {
-                    _Private.clippingMaskAdaptContainerSize();
-                } else {
-                    _Private.displayRectBox.x = 0;
-                    _Private.displayRectBox.y = 0;
-                    _Private.displayRectBox.width = s.width;
-                    _Private.displayRectBox.height = s.height;
+                if (s.state === 'show') {
+                    s.width = window.innerWidth;
+                    s.height = window.innerHeight;
+                    if (s.pattern === 'clipping') {
+                        _Private.clippingMaskAdaptContainerSize();
+                    } else {
+                        _Private.displayRectBox.x = 0;
+                        _Private.displayRectBox.y = 0;
+                        _Private.displayRectBox.width = s.width;
+                        _Private.displayRectBox.height = s.height;
+                    }
+                    s.vImageList.forEach(function (item) {
+                        item.defaultAdaption();
+                        item.useDataToImage();
+                    });
+                    //设置当前页为选中状态
+                    _Private.viewBoxPositionX = -(s.width + s.imageMargin) * (s.page - 1);
+                    _Private.setViewBoxPositionX();
                 }
-                s.vImageList.forEach(function (item) {
-                    item.defaultAdaption();
-                    item.useDataToImage();
-                });
-                //设置当前页为选中状态
-                _Private.viewBoxPositionX = -(s.width + s.imageMargin) * (s.page - 1);
-                _Private.setViewBoxPositionX();
             });
         },
         //无动画显示
