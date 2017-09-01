@@ -1347,9 +1347,9 @@
                 } else {
                     var speed = _Interaction.getTouchMoveSpeed(10);
                     //翻页
-                    if (speed.x >= .3 && touch.horDirection === 'right') {
+                    if (speed.x >= .2 && touch.horDirection === 'right') {
                         s.prevPage();
-                    } else if (speed.x <= -.3 && touch.horDirection === 'left') {
+                    } else if (speed.x <= -.2 && touch.horDirection === 'left') {
                         s.nextPage();
                     } else {
                         _Interaction.basedSlideXSetPage(touch.horDirection);
