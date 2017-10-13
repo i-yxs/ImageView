@@ -7,6 +7,8 @@
     /*
         兼容处理
     */
+    var isAndroid = navigator.userAgent.indexOf('Android') > -1 || navigator.userAgent.indexOf('Adr') > -1; //android终端
+    var isIOS = !!navigator.userAgent.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/); //ios终端
     //数据类型判断
     function isType(obj, name) {
         return Object.prototype.toString.call(obj).toLowerCase() == '[object ' + name.toLowerCase() + ']';
@@ -444,6 +446,9 @@
         if (ImageView.pattern === 'clipping') {
             displaySize = 'cover';
             displayPosition = 'center';
+
+        } else {
+            s.maxScale = s.naturalWidth / s.width;
         }
         //调整大小
         var width = Math.min(_Private.displayRectBox.width, s.naturalWidth);
@@ -454,17 +459,26 @@
         }
         s.width = width;
         s.height = height;
-        s.maxScale = s.naturalWidth / s.width;
         s.left = (ImageView.width + ImageView.imageMargin) * s.index;
         //根据真实尺寸调整缩放大小
         switch (displaySize) {
             case 'cover':
                 var width = Math.round(_Private.displayRectBox.height / s.naturalHeight * s.naturalWidth);
                 var height = Math.round(_Private.displayRectBox.width / s.naturalWidth * s.naturalHeight);
-                if (width >= _Private.displayRectBox.width) {
-                    s.scale = Math.min(s.maxScale, width / s.width);
-                } else if (height >= _Private.displayRectBox.height) {
-                    s.scale = Math.min(s.maxScale, height / s.height);
+                if (ImageView.pattern === 'clipping') {
+                    s.maxScale = Math.max(width / s.width, height / s.height);
+                    if (width >= _Private.displayRectBox.width) {
+                        s.scale = Math.min(s.maxScale, width / s.width);
+                    } else if (height >= _Private.displayRectBox.height) {
+                        s.scale = Math.min(s.maxScale, height / s.height);
+                    }
+                } else {
+                    s.maxScale = s.naturalWidth / s.width;
+                    if (width >= _Private.displayRectBox.width) {
+                        s.scale = Math.min(s.maxScale, width / s.width);
+                    } else if (height >= _Private.displayRectBox.height) {
+                        s.scale = Math.min(s.maxScale, height / s.height);
+                    }
                 }
                 break;
             case 'contain':
@@ -1028,7 +1042,7 @@
                     _Interaction.gesturestart();
                 }
             }
-            e.preventDefault();
+            isIOS && e.preventDefault();
         },
         //手指移动中
         move: function (e) {
@@ -1142,7 +1156,8 @@
                     _Interaction.gestureend(currentTouch);
                 }
                 if (currentTouch.clientX === touch.clientX &&
-                    currentTouch.clientY === touch.clientY) {
+                    currentTouch.clientY === touch.clientY &&
+                    touch.timestamp - currentTouch.timestamp < 300) {
                     //单击隐藏上下工具栏
                     if (_Element.container.hasClass('iv_full')) {
                         _Element.container.removeClass('iv_full');
@@ -1665,6 +1680,13 @@
             setTimeout(function () {
                 _Element.container.setAttribute('data-state', 'default');
                 _Element.container.removeClass('iv_fade_out').addClass('iv_fade_in');
+                if (s.pattern === 'clipping') {
+                    _Element.iv_masks.css({
+                        width: _Private.displayRectBox.width + 'px',
+                        height: _Private.displayRectBox.height + 'px',
+                        borderRadius: _Private.displayRectBox.clippingRadius + 'px'
+                    });
+                }
                 setTimeout(function () {
                     _Element.iv_block.addClass('iv_hide');
                     s.dispatchEvent('show');
@@ -1678,6 +1700,9 @@
             setTimeout(function () {
                 _Element.container.setAttribute('data-state', 'default');
                 _Element.container.removeClass('iv_fade_in').addClass('iv_fade_out');
+                if (s.pattern === 'clipping') {
+                    _Element.iv_masks.css({ width: '100%', height: '100%', borderRadius: '0' });
+                }
                 setTimeout(function () {
                     _Element.iv_block.addClass('iv_hide');
                     _Element.container.remove();
@@ -2238,12 +2263,7 @@
             var isDisplay = false;
             var target = event.target;
             var currentTarget = event.currentTarget;
-            if (s.vImageList.length === 1) {
-                var vimgTarget = s.vImageList[0].target;
-                if (vimgTarget === currentTarget || vimgTarget === target) {
-                    isDisplay = true;
-                }
-            } else if (s.vImageList.length > 1) {
+            if (s.vImageList.length > 0) {
                 if (isType(s.selector, 'string')) {
                     if (s.isFindTargettoImageList) {
                         s.vImageList.every(function (item, i) {
