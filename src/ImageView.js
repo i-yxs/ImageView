@@ -2215,7 +2215,7 @@
             //当前图片显示宽度
             var imageWidth = Math.round(vimg.width * vimg.scale);
             //根据图片实际大小计算放大倍数
-            var magnify = Math.max(vimg.naturalWidth / imageWidth, 1);
+            var magnify = vimg.naturalWidth / imageWidth;
             //绘制层
             var drawCanvas = document.createElement('canvas');
             var drawContext = drawCanvas.getContext('2d');
