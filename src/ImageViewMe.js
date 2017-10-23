@@ -421,6 +421,8 @@
         s.maxScale = 1;
         //最小缩放倍数
         s.minScale = 1;
+        //初始缩放倍数
+        s.initScale = 1;
         //位于存放列表下标位置
         s.index = 0;
         //是否被选中
@@ -442,14 +444,6 @@
         var displaySize = arguments[0] || ImageView.initDisplaySize;
         var displayPositionX = arguments[1] || ImageView.initDisplayPositionX;
         var displayPositionY = arguments[2] || ImageView.initDisplayPositionY;
-        //裁剪模式
-        if (ImageView.pattern === 'clipping') {
-            displaySize = 'cover';
-            displayPosition = 'center';
-
-        } else {
-            s.maxScale = s.naturalWidth / s.width;
-        }
         //调整大小
         var width = Math.min(_Private.displayRectBox.width, s.naturalWidth);
         var height = Math.round(width / s.naturalWidth * s.naturalHeight);
@@ -460,20 +454,30 @@
         s.width = width;
         s.height = height;
         s.left = (ImageView.width + ImageView.imageMargin) * s.index;
+        //裁剪模式
+        if (ImageView.pattern === 'clipping') {
+            displaySize = 'cover';
+            displayPosition = 'center';
+        } else {
+            s.maxScale = s.naturalWidth / s.width;
+            s.initScale = 1;
+        }
         //根据真实尺寸调整缩放大小
         switch (displaySize) {
             case 'cover':
                 var width = Math.round(_Private.displayRectBox.height / s.naturalHeight * s.naturalWidth);
                 var height = Math.round(_Private.displayRectBox.width / s.naturalWidth * s.naturalHeight);
                 if (ImageView.pattern === 'clipping') {
-                    s.maxScale = Math.max(width / s.width, height / s.height);
+                    s.initScale = s.maxScale = s.minScale = Math.max(width / s.width, height / s.height);
+                    if (s.width * s.maxScale < s.naturalWidth) {
+                        s.maxScale = s.naturalWidth / s.width;
+                    }
                     if (width >= _Private.displayRectBox.width) {
                         s.scale = Math.min(s.maxScale, width / s.width);
                     } else if (height >= _Private.displayRectBox.height) {
                         s.scale = Math.min(s.maxScale, height / s.height);
                     }
                 } else {
-                    s.maxScale = s.naturalWidth / s.width;
                     if (width >= _Private.displayRectBox.width) {
                         s.scale = Math.min(s.maxScale, width / s.width);
                     } else if (height >= _Private.displayRectBox.height) {
@@ -540,15 +544,15 @@
         var scale = s.scale;
         var rotate = s.rotate;
         if (arguments[0]) {
-            scale = 1;
+            scale = s.initScale;
             rotate = 0;
             x = (ImageView.width - s.width) / 2;
             y = (ImageView.height - s.height) / 2;
         } else {
-            if (s.scale > 1) {
-                if (s.lastScale < 1) {
-                    //如果上一次缩放比例小于1，则最大缩放比例为1
-                    scale = 1;
+            if (s.scale > s.initScale) {
+                if (s.lastScale < s.initScale) {
+                    //如果上一次缩放比例小于初始缩放比例，则还原到初始缩放比例
+                    scale = s.initScale;
                     x = s.firstPosition.x;
                     y = s.firstPosition.y;
                 } else if (s.scale > s.maxScale) {
@@ -557,10 +561,10 @@
                     x = _Private.displayRectBox.x + s.lastAnchor.x * (1 - scale);
                     y = _Private.displayRectBox.y + s.lastAnchor.y * (1 - scale);
                 }
-            } else if (s.scale < 1) {
-                if (s.lastScale > 1) {
-                    //如果上一次缩放比例大于1，则最小缩放比例为1
-                    scale = 1;
+            } else if (s.scale < s.initScale) {
+                if (s.lastScale > s.initScale) {
+                    //如果上一次缩放比例大于初始缩放比例，则还原到初始缩放比例
+                    scale = s.initScale;
                     x = s.firstPosition.x;
                     y = s.firstPosition.y;
                 } else if (s.scale < s.minScale) {
