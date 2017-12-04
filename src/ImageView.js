@@ -3,394 +3,192 @@
     作者：yxs
     项目地址：https://github.com/qq597392321/ImageView
 */
-(function (window) {
-    'use strict'
-    //是否ios设备
-    var isIos = !!navigator.userAgent.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
-    //是否安卓设备
-    var isAndroid = navigator.userAgent.indexOf('Android') > -1 || navigator.userAgent.indexOf('Adr') > -1;
-    //常用功能
-    var oftenFunc = {
-        //判断指定对象的数据类型(指定对象，类型名称(可选，如果为空，则返回指定对象的类型字符串))
-        isType: function (obj, name) {
-            var toString = Object.prototype.toString.call(obj).toLowerCase();
-            if (name === undefined) {
-                return /^\[object (\w+)\]$/.exec(toString)[1];
-            } else {
-                return toString === '[object ' + name.toLowerCase() + ']';
-            }
-        },
-        //indexOf增强版，可以指定多级属性(指定数组对象，指定需要匹配的值，链式调用路径)
-        indexOf2: function (_this, value, tier) {
-            var i, z;
-            var tier = (tier && tier.split('.')) || [];
-            var length = (tier && tier.length) || 0;
-            var errorsign = [];
-            var temporary = null;
-            for (var i = 0; i < _this.length; i++) {
-                temporary = _this[i];
-                for (var z = 0; z < length; z++) {
-                    try {
-                        temporary = temporary[tier[z]];
-                    } catch (e) {
-                        temporary = errorsign;
-                        break;
-                    }
-                }
-                if (temporary !== errorsign &&
-                    temporary === value) {
-                    return i;
-                }
-            }
-            return -1;
-        },
-        //对象克隆(指定对象)
-        clone: function (_this) {
-            var obj = null;
-            switch (oftenFunc.isType(_this)) {
-                case 'array':
-                    obj = [];
-                    _this.forEach(function (item, i) {
-                        obj[i] = oftenFunc.clone(item);
-                    });
-                    break;
-                case 'object':
-                    obj = {};
-                    Object.keys(_this).forEach(function (name) {
-                        obj[name] = oftenFunc.clone(_this[name]);
-                    });
-                    break;
-                default: return _this;
-            }
-            return obj;
-        },
-        //数组去重(指定对象，链式调用路径(可选，如果不为空，则只判断该链式路径下的值))
-        unique: function (_this, tier) {
-            var i, z;
-            var len1 = _this.length;
-            var tier = (tier && tier.split('.')) || [];
-            var len2 = (tier && tier.length) || 0;
-            var newdata = [];
-            var valuelist = [];
-            var errorsign = [];
-            var temporary = null;
-            for (i = 0; i < len1; i++) {
-                var temporary = _this[i];
-                for (z = 0; z < len2; z++) {
-                    try {
-                        temporary = temporary[tier[z]];
-                    } catch (e) {
-                        temporary = errorsign;
-                        break;
-                    }
-                }
-                if (temporary === errorsign) {
-                    newdata.push(_this[i]);
-                } else if (valuelist.indexOf(temporary) === -1) {
-                    newdata.push(_this[i]);
-                    valuelist.push(temporary);
-                }
-            }
-            return newdata;
-        },
-        //绑定上下文(指定对象，指定上下文对象)
-        bindContext: function (obj, context) {
-            var type = oftenFunc.isType(obj);
-            if (type === 'object' || type === 'function') {
-                Object.keys(obj).forEach(function (name) {
-                    switch (oftenFunc.isType(obj[name])) {
-                        case 'function':
-                            obj[name] = obj[name].bind(context);
-                            break;
-                        case 'object':
-                            oftenFunc.bindContext(obj[name], context);
-                            break;
-                    }
-                });
-            }
-        },
-        //对象继承(指定继承对象，指定继承自对象，当继承对象已存在属性，是否用新的值覆盖旧的值(可选，默认false))
-        extend: function (target, obj, isrep) {
-            Object.keys(obj).forEach(function (name) {
-                if (target[name] !== undefined && !isrep) return;
-                target[name] = obj[name];
-            });
-        },
-        //绘制圆角矩形
-        radiusRect: function (context, width, height, r1, r2, r3, r4) {
-            context.beginPath();
-            context.moveTo(0, height - r1);
-            context.arcTo(0, 0, width, 0, r1);
-            context.arcTo(width, 0, width, height, r2);
-            context.arcTo(width, height, 0, height, r4);
-            context.arcTo(0, height, 0, 0, r3);
-            context.closePath();
-            return context;
-        }
+(function () {
+    /*
+        兼容处理
+    */
+    var isAndroid = navigator.userAgent.indexOf('Android') > -1 || navigator.userAgent.indexOf('Adr') > -1; //android终端
+    var isIOS = !!navigator.userAgent.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/); //ios终端
+    //数据类型判断
+    function isType(obj, name) {
+        return Object.prototype.toString.call(obj).toLowerCase() == '[object ' + name.toLowerCase() + ']';
     };
-    //dom常用功能封装
-    var oftenDomFunc = {
-        //自定义数据key名
-        keyName: '__CustomData' + Date.now() + '__',
-        //继承
-        extend: function (element) {
-            Object.keys(oftenDomFunc).forEach(function (name) {
-                if (oftenFunc.isType(oftenDomFunc[name], 'function')) {
-                    element[name] = oftenDomFunc[name].bind(element);
-                }
-            });
-            element[oftenDomFunc.keyName] = {
-                //队列数据
-                'queue': {
-                    //默认队列
-                    'def': {
-                        //队列数据列表
-                        list: [],
-                        //计时器id
-                        timerid: null
-                    }
-                }
-            };
-        },
-        //取消继承
-        destroy: function (element) {
-            Object.keys(oftenDomFunc).forEach(function (name) {
-                if (oftenFunc.isType(oftenDomFunc[name], 'function')) {
-                    delete element[name];
-                }
-            });
-            delete element[oftenDomFunc.keyName];
-        },
-        //设置指定样式值
-        css: function (json) {
-            var browsersCompatible = ['transform', 'transition', 'animation', 'clipPath'];
-            for (var name in json) {
-                var index = browsersCompatible.indexOf(name);
-                if (index > -1) {
-                    var n = name.replace(/^([a-z])/, name[0].toUpperCase());
-                    this.style['webkit' + n] = json[name];
-                }
-                this.style[name] = json[name];
+    //判断是否具有指定样式类
+    HTMLElement.prototype.hasClass = function (name) {
+        var c = this.className.split(' ');
+        for (var i = c.length - 1; i >= 0; i--) {
+            if (c[i].toLowerCase() == name.toLowerCase()) {
+                return true;
             }
-            return this;
-        },
-        //删除自己
-        remove: function () {
-            this.parentNode.removeChild(this);
-            return this;
-        },
-        //获取指定选择器的祖先元素列表
-        parents: function (exp) {
-            var s = this;
-            var list = [];
-            //获取祖先元素列表
-            var node = s.parentNode;
-            var path = [];
-            while (node) {
-                path.push(node);
-                node = node.parentNode;
-            }
-            //筛选符合选择器的元素
-            var explist = document.querySelectorAll(exp);
-            var length = explist.length;
-            for (var i = 0; i < length; i++) {
-                if (path.indexOf(explist[i]) > -1) {
-                    list.push(explist[i]);
-                }
-            }
-            return list;
-        },
-        //判断是否具有指定样式类
-        hasClass: function (name) {
-            var c = this.className.split(' ');
-            for (var i = c.length - 1; i >= 0; i--) {
-                if (c[i].toLowerCase() == name.toLowerCase()) {
-                    return true;
-                }
-            }
-            return false;
-        },
-        //添加样式类
-        addClass: function (name) {
-            var list1 = name.split(' ');
-            var list2 = this.className.split(' ');
-            list1.forEach(function (item, i) {
-                var index = list2.indexOf(item);
-                if (index === -1) {
-                    list2.push(item);
-                }
-            });
-            this.className = list2.join(' ');
-            return this;
-        },
-        //删除样式类
-        removeClass: function (name) {
-            var list1 = name.split(' ');
-            var list2 = this.className.split(' ');
-            list1.forEach(function (item) {
-                var index = list2.indexOf(item);
-                if (index > -1) {
-                    list2.splice(index, 1);
-                }
-            });
-            this.className = list2.join(' ');
-            return this;
-        },
-        //获取指定样式值，数值只会返回数字
-        getComputedStyle: function (name, pseudoElt) {
-            var res;
-            var style = getComputedStyle(this, pseudoElt);
-            if (res = /^([0-9.%]+)[^0-9.%]+$/.exec(style[name])) {
-                return Number(res[1]);
-            }
-            return style[name];
-        },
-        //判断给定选择器元素是否在事件冒泡路径中
-        isEventAgencyTarget: function (exp) {
-            var s = this;
-            var path = [];
-            var target = event.target;
-            //获取冒泡路径
-            while (target) {
-                path.push(target);
-                target = target.parentNode;
-            }
-            var list = s.querySelectorAll(exp);
-            var length = list.length;
-            for (var i = 0; i < length; i++) {
-                if (path.indexOf(list[i]) > -1) {
-                    return list[i];
-                }
-            }
-            return false;
-        },
-        //加入队列
-        queue: function () {
-            var s = this;
-            var data = s[oftenDomFunc.keyName]['queue'];
-            //修正参数
-            var name = 'def', func, delay = 0;
-            [].forEach.call(arguments, function (item) {
-                switch (oftenFunc.isType(item)) {
-                    case 'string': name = item; break;
-                    case 'function': func = item; break;
-                    case 'number': delay = item; break;
-                }
-            });
-            if (func) {
-                if (!data[name]) {
-                    data[name] = { list: [], timerid: null };
-                }
-                data[name].list.push({ func: func, delay: delay });
-                //是否有延时队列正在执行
-                if (data[name].timerid === null) {
-                    s.dequeue(name);
-                }
-            }
-            return s;
-        },
-        //是否有延时队列正在执行
-        isqueue: function () {
-            var s = this;
-            var name = arguments[0] || 'def';
-            var data = s[oftenDomFunc.keyName]['queue'];
-            return !!data[name].timerid;
-        },
-        //从队列最前端移除并执行一个队列函数。
-        dequeue: function () {
-            var s = this;
-            var name = arguments[0] || 'def';
-            var data = s[oftenDomFunc.keyName]['queue'];
-            var first = data[name].list.shift();
-            if (first) {
-                data[name].timerid = setTimeout(function () {
-                    first.func.call(s);
-                    data[name].timerid = null;
-                    return s.dequeue(name);
-                }, first.delay);
-            }
-            return s;
-        },
-        //清空队列
-        clearQueue: function () {
-            var s = this;
-            var name = arguments[0] || 'def';
-            var data = s[oftenDomFunc.keyName]['queue'];
-            data[name].list = [];
-            clearTimeout(data[name].timerid);
-            return s;
         }
+        return false;
+    };
+    //添加样式类
+    HTMLElement.prototype.addClass = function (name) {
+        var list1 = name.split(' ');
+        var list2 = this.className.split(' ');
+        list1.forEach(function (item, i) {
+            var index = list2.indexOf(item);
+            if (index === -1) {
+                list2.push(item);
+            }
+        });
+        this.className = list2.join(' ');
+        return this;
+    };
+    //删除样式类
+    HTMLElement.prototype.removeClass = function (name) {
+        var list1 = name.split(' ');
+        var list2 = this.className.split(' ');
+        list1.forEach(function (item) {
+            var index = list2.indexOf(item);
+            if (index > -1) {
+                list2.splice(index, 1);
+            }
+        });
+        this.className = list2.join(' ');
+        return this;
+    };
+    //删除自己
+    HTMLElement.prototype.remove = function () {
+        this.parentNode.removeChild(this);
+        return this;
+    };
+    //获取指定样式值，数值只会返回数字
+    HTMLElement.prototype.getComputedStyle = function (name, pseudoElt) {
+        var res;
+        var style = getComputedStyle(this, pseudoElt);
+        if (res = /^([0-9.%]+)[^0-9.%]+$/.exec(style[name])) {
+            return Number(res[1]);
+        }
+        return style[name];
+    };
+    //设置指定样式值
+    var browsersCompatible = ['transform', 'transition', 'animation', 'clipPath'];
+    HTMLElement.prototype.css = function (json) {
+        for (var name in json) {
+            var index = browsersCompatible.indexOf(name);
+            if (index > -1) {
+                var n = name.replace(/^([a-z])/, name[0].toUpperCase());
+                this.style['webkit' + n] = json[name];
+            }
+            this.style[name] = json[name];
+        }
+        return this;
+    };
+    //indexOf增强版，可以指定多级属性
+    Array.prototype.indexOf2 = function (value, property) {
+        var list = property && property.split('.');
+        var length = (list && list.length) || 0;
+        var index = -1;
+        var temporary;
+        for (var i = 0; i < this.length; i++) {
+            var temporary = this[i];
+            for (var z = 0; z < length; z++) {
+                if (typeof temporary === 'object' || typeof temporary === 'function') {
+                    if (list[z] !== '') {
+                        temporary = temporary[list[z]];
+                    }
+                } else {
+                    temporary = null;
+                    break;
+                }
+            }
+            if (temporary === value) {
+                return i;
+            }
+        }
+        return index;
+    };
+    //绘制圆角矩形
+    CanvasRenderingContext2D.prototype.radiusRect = function (width, height, r1, r2, r3, r4) {
+        var s = this;
+        s.beginPath();
+        s.moveTo(0, height - r1);
+        s.arcTo(0, 0, width, 0, r1);
+        s.arcTo(width, 0, width, height, r2);
+        s.arcTo(width, height, 0, height, r4);
+        s.arcTo(0, height, 0, 0, r3);
+        s.closePath();
+        return s;
     };
     /*
-        事件推送
+        监听器
     */
-    var EventPush = {
-        //自定义数据key名
-        keyName: '__CustomData' + Date.now() + '__',
-        //注册
-        register: function (obj) {
-            var s = this;
-            if (obj[s.keyName] === undefined) {
-                obj[s.keyName] = {};
-                obj['dispatchEvent'] = s.dispatchEvent.bind(obj);
-                obj['addEvent'] = obj['on'] = s.addEvent.bind(obj);
-                obj['removeEvent'] = obj['off'] = s.removeEvent.bind(obj);
-                obj['emptyEvent'] = s.emptyEvent.bind(obj);
-            }
-        },
-        //取消注册
-        destroy: function (obj) {
-            var names = ['on', 'off', 'dispatchEvent', 'addEvent', 'removeEvent', 'emptyEvent'];
-            names.forEach(function (name) {
-                delete obj[name];
-            });
-        },
-        //派送事件
-        dispatchEvent: function (type, data) {
-            var s = this;
-            type = type.toLowerCase();
-            if (s[EventPush.keyName] !== undefined) {
-                var list = s[EventPush.keyName][type];
-                list && list.forEach(function (item) {
-                    item.call(s, data);
-                });
-                var humpName = 'on' + type[0].toUpperCase() + type.substring(1);
-                if (Object.prototype.toString.call(s[humpName]).toLowerCase() === '[object function]') {
-                    s[humpName].call(s, data);
-                }
-            }
-        },
-        //添加事件
-        addEvent: function (type, callback) {
-            var s = this;
-            type = type.toLowerCase();
-            (s[EventPush.keyName][type] = s[EventPush.keyName][type] || []).push(callback);
-        },
-        //删除事件
-        removeEvent: function (type, callback) {
-            var s = this;
-            type = type.toLowerCase();
-            var list = s[EventPush.keyName][type];
-            if (list) {
-                var index = list.indexOf(callback);
-                if (i > -1) {
-                    list.splice(i, 1);
-                }
-            }
-        },
-        //清空事件
-        emptyEvent: function () {
-            var s = this;
-            s[EventPush.keyName] = {};
+    var Listeners = function () {
+        var s = this;
+        //公用变量名
+        s.publicName1 = '__ListenersisRegistered__';
+        s.publicName2 = '__ListenersCallbackList__';
+    };
+    //注册监听器
+    Listeners.prototype.register = function (obj) {
+        var s = this;
+        if (!obj[s.publicName1]) {
+            obj[s.publicName1] = true;
+            obj[s.publicName2] = obj[s.publicName2] || {};
+            obj.dispatchEvent = s.dispatchEvent.bind(obj);
+            obj.on = obj.addEventListener = s.addEventListener.bind(obj);
+            obj.off = obj.removeEventListener = s.removeEventListener.bind(obj);
         }
     };
+    //删除监听器
+    Listeners.prototype.remove = function (obj) {
+        var s = this;
+        obj[s.publicName1] = false;
+        obj[s.publicName2] = null;
+        obj.dispatchEvent = null;
+        obj.on = obj.addEventListener = null;
+        obj.off = obj.removeEventListener = null;
+    };
+    //事件派送
+    Listeners.prototype.dispatchEvent = function (type, data, phase) {
+        var s = this;
+        phase = phase || 1;
+        type = type.toLowerCase();
+        if (s[Listeners.publicName2][phase]) {
+            var list = s[Listeners.publicName2][phase][type];
+            if (list) {
+                list.forEach(function (item) {
+                    item.call(s, data);
+                });
+            }
+        }
+        var typeName = type.toLowerCase().replace(/^([a-z])/g, type[0].toUpperCase());
+        if (s['on' + typeName] && isType(s['on' + typeName], 'function')) {
+            s['on' + typeName].call(s, data);
+        }
+    };
+    //添加事件监听
+    Listeners.prototype.addEventListener = function (type, callback, phase) {
+        var s = this;
+        phase = phase || 1;
+        type = type.toLowerCase();
+        s[Listeners.publicName2][phase] = s[Listeners.publicName2][phase] || {};
+        s[Listeners.publicName2][phase][type] = s[Listeners.publicName2][phase][type] || [];
+        s[Listeners.publicName2][phase][type].push(callback);
+    };
+    //删除事件监听
+    Listeners.prototype.removeEventListener = function (type, callback, phase) {
+        var s = this;
+        phase = phase || 1;
+        type = type.toLowerCase();
+        if (s[Listeners.publicName2][phase] && s[Listeners.publicName2][phase][type]) {
+            var list = s[Listeners.publicName2][phase][type];
+            if (typeof callback === 'string' && callback.toLowerCase() === 'all') {
+                list.length = 0;
+            } else {
+                var i = list.indexOf(callback);
+                if (i !== -1) { list.splice(i, 1); }
+            }
+        }
+    };
+    Listeners = new Listeners();
     /*
         速度衰减动画类
     */
     function SpeedDecay(from, speed) {
         var s = this;
-        //注册监听器
-        EventPush.register(s);
         //开始值列表
         s.fromValue = {};
         //当前值列表
@@ -417,84 +215,81 @@
         s.start = s.start.bind(s);
         //初始化
         s.init(from);
+        //注册监听器
+        Listeners.register(s);
     };
-    //添加属性和方法
-    oftenDomFunc.extend(SpeedDecay.prototype, {
-        //初始化
-        init: function (from) {
-            var s = this;
-            s.state = 'idle';
-            s.fromValue = from || {};
-            s._nodeTime = Date.now();
-            s._nodeValue = {};
-            for (var name in s.fromValue) {
-                s._nodeValue[name] = s.fromValue[name];
+    //初始化
+    SpeedDecay.prototype.init = function (from) {
+        var s = this;
+        s.state = 'idle';
+        s.fromValue = from || {};
+        s._nodeTime = Date.now();
+        s._nodeValue = {};
+        for (var name in s.fromValue) {
+            s._nodeValue[name] = s.fromValue[name];
+        }
+    };
+    //动画更新
+    SpeedDecay.prototype.start = function () {
+        var s = this;
+        if (s.state !== 'pauseing') {
+            s.state = 'running';
+            s._DataUpdateTimer = requestAnimationFrame(s.start);
+            var currSpeed = 0;
+            var currValue = {};
+            var currTime = Date.now() - s._nodeTime;
+            if (s._nodeSpeed === null) {
+                s._nodeSpeed = s.initSpeed;
             }
-        },
-        //动画更新
-        start: function () {
-            var s = this;
-            if (s.state !== 'pauseing') {
-                s.state = 'running';
-                s._DataUpdateTimer = requestAnimationFrame(s.start);
-                var currSpeed = 0;
-                var currValue = {};
-                var currTime = Date.now() - s._nodeTime;
-                if (s._nodeSpeed === null) {
-                    s._nodeSpeed = s.initSpeed;
-                }
-                if (currTime < 100) {
-                    currSpeed = currTime / 100 * s._nodeSpeed;
-                } else {
-                    for (var name in s.fromValue) {
-                        if (s.fromValue.hasOwnProperty(name)) {
-                            s._nodeValue[name] += s._nodeSpeed;
-                        }
-                    }
-                    s._nodeTime += 100;
-                    s._nodeSpeed *= s.friction;
-                    currSpeed = (currTime - 100) / 100 * s._nodeSpeed;
-                }
+            if (currTime < 100) {
+                currSpeed = currTime / 100 * s._nodeSpeed;
+            } else {
                 for (var name in s.fromValue) {
                     if (s.fromValue.hasOwnProperty(name)) {
-                        currValue[name] = s._nodeValue[name] + currSpeed;
+                        s._nodeValue[name] += s._nodeSpeed;
                     }
                 }
-                s.dispatchEvent('update', currValue);
-                if (Math.abs(s._nodeSpeed) <= s.minSpeed) {
-                    s.stopTimer();
-                    s.dispatchEvent('complete');
+                s._nodeTime += 100;
+                s._nodeSpeed *= s.friction;
+                currSpeed = (currTime - 100) / 100 * s._nodeSpeed;
+            }
+            for (var name in s.fromValue) {
+                if (s.fromValue.hasOwnProperty(name)) {
+                    currValue[name] = s._nodeValue[name] + currSpeed;
                 }
             }
-        },
-        //暂停/继续
-        pause: function () {
-            var s = this;
-            if (s.state === 'running') {
+            s.dispatchEvent('update', currValue);
+            if (Math.abs(s._nodeSpeed) <= s.minSpeed) {
                 s.stopTimer();
-                s.state = 'pauseing';
-                s._pauseTimesTamp = Date.now();
-            } else if (s.state === 'pauseing') {
-                s.state = 'running';
-                s._nodeTime += Date.now() - s._pauseTimesTamp;
-                s.start();
+                s.dispatchEvent('complete');
             }
-        },
-        //停止计时器
-        stopTimer: function () {
-            var s = this;
-            s.state = 'idle';
-            s._nodeSpeed = null;
-            cancelAnimationFrame(s._DataUpdateTimer);
         }
-    });
+    };
+    //暂停/继续
+    SpeedDecay.prototype.pause = function () {
+        var s = this;
+        if (s.state === 'running') {
+            s.stopTimer();
+            s.state = 'pauseing';
+            s._pauseTimesTamp = Date.now();
+        } else if (s.state === 'pauseing') {
+            s.state = 'running';
+            s._nodeTime += Date.now() - s._pauseTimesTamp;
+            s.start();
+        }
+    };
+    //停止计时器
+    SpeedDecay.prototype.stopTimer = function () {
+        var s = this;
+        s.state = 'idle';
+        s._nodeSpeed = null;
+        cancelAnimationFrame(s._DataUpdateTimer);
+    };
     /*
         缓动动画类
     */
     function Animation(from, to) {
         var s = this;
-        //注册监听器
-        EventPush.register(s);
         //开始值列表
         s.fromList = {};
         //结束值列表
@@ -513,68 +308,81 @@
         s.start = s.start.bind(s);
         //初始化
         s.init(from, to);
+        //注册监听器
+        Listeners.register(s);
     };
-    //添加属性和方法
-    oftenDomFunc.extend(Animation.prototype, {
-        //初始化
-        init: function (from, to) {
-            var s = this;
-            s.state = 'idle';
-            s.fromList = from || {};
-            s.toList = to || {};
-            s.startTime = Date.now();
-        },
-        //动画更新
-        start: function () {
-            var s = this;
-            var res = {};
-            var currTime = Date.now() - s.startTime;
-            if (s.state !== 'pauseing') {
-                s.state = 'running';
-                s._DataUpdateTimer = requestAnimationFrame(s.start);
-                if (currTime < s.duration) {
-                    for (var name in s.fromList) {
-                        if (s.fromList.hasOwnProperty(name)) {
-                            res[name] = s.easing(currTime, s.fromList[name], s.toList[name] - s.fromList[name], s.duration);
-                        }
+    //初始化
+    Animation.prototype.init = function (from, to) {
+        var s = this;
+        s.state = 'idle';
+        s.fromList = from || {};
+        s.toList = to || {};
+        s.startTime = Date.now();
+    };
+    //动画更新
+    Animation.prototype.start = function () {
+        var s = this;
+        var res = {};
+        var currTime = Date.now() - s.startTime;
+        if (s.state !== 'pauseing') {
+            s.state = 'running';
+            s._DataUpdateTimer = requestAnimationFrame(s.start);
+            if (currTime < s.duration) {
+                for (var name in s.fromList) {
+                    if (s.fromList.hasOwnProperty(name)) {
+                        res[name] = s.easing(currTime, s.fromList[name], s.toList[name] - s.fromList[name], s.duration);
                     }
-                    s.dispatchEvent('update', res);
-                } else {
-                    s.stopTimer();
-                    s.dispatchEvent('update', s.toList);
-                    s.dispatchEvent('complete');
                 }
-            }
-        },
-        //暂停/继续
-        pause: function () {
-            var s = this;
-            if (s.state === 'running') {
+                s.dispatchEvent('update', res);
+            } else {
                 s.stopTimer();
-                s.state = 'pauseing';
-                s._pauseTimesTamp = Date.now();
-            } else if (s.state === 'pauseing') {
-                s.state = 'running';
-                s.startTime += Date.now() - s._pauseTimesTamp;
-                s.start();
+                s.dispatchEvent('update', s.toList);
+                s.dispatchEvent('complete');
             }
-        },
-        //停止计时器
-        stopTimer: function () {
-            var s = this;
-            s.state = 'idle';
-            cancelAnimationFrame(s._DataUpdateTimer);
-        },
-        //动画算法
-        easing: function (t, b, c, d) { return c * ((t = t / d - 1) * t * t + 1) + b; }
-    });
+        }
+    };
+    //暂停/继续
+    Animation.prototype.pause = function () {
+        var s = this;
+        if (s.state === 'running') {
+            s.stopTimer();
+            s.state = 'pauseing';
+            s._pauseTimesTamp = Date.now();
+        } else if (s.state === 'pauseing') {
+            s.state = 'running';
+            s.startTime += Date.now() - s._pauseTimesTamp;
+            s.start();
+        }
+    };
+    //停止计时器
+    Animation.prototype.stopTimer = function () {
+        var s = this;
+        s.state = 'idle';
+        cancelAnimationFrame(s._DataUpdateTimer);
+    };
+    //动画算法
+    Animation.prototype.easing = function (t, b, c, d) { return c * ((t = t / d - 1) * t * t + 1) + b; };
     /*
-        自定义图像类
+        图像查看器类
+    */
+    //翻页动画
+    var _PageFx = new Animation();
+    //还原缩放状态动画
+    var _RestoreFx = new Animation();
+    _RestoreFx.on('complete', function () {
+        _RestoreFx.onUpdate = null;
+    });
+    //还原图片位置动画
+    var _RestoreFx_X = new Animation();
+    var _RestoreFx_Y = new Animation();
+    //滚屏动画
+    var _ScrollFx_X = new SpeedDecay();
+    var _ScrollFx_Y = new SpeedDecay();
+    /*
+        图像类
     */
     function Vimg(json) {
         var s = this;
-        //注册监听器
-        EventPush.register(s);
         //dom元素
         s.image = null;
         //矩形盒子
@@ -627,586 +435,565 @@
                 s[name] = json[name];
             }
         }
+        //注册监听器
+        Listeners.register(s);
     };
-    //添加属性和方法
-    oftenDomFunc.extend(Vimg.prototype, {
-        //自定义适应
-        customAdaption: function () {
-            var s = this;
-            var displaySize = arguments[0] || ImageView.initDisplaySize;
-            var displayPositionX = arguments[1] || ImageView.initDisplayPositionX;
-            var displayPositionY = arguments[2] || ImageView.initDisplayPositionY;
-            //调整大小
-            var width = Math.min(_Private.displayRectBox.width, s.naturalWidth);
-            var height = Math.round(width / s.naturalWidth * s.naturalHeight);
-            if (height > _Private.displayRectBox.height) {
-                height = _Private.displayRectBox.height;
-                width = Math.round(height / s.naturalHeight * s.naturalWidth);
+    //自定义适应
+    Vimg.prototype.customAdaption = function () {
+        var s = this;
+        var displaySize = arguments[0] || ImageView.initDisplaySize;
+        var displayPositionX = arguments[1] || ImageView.initDisplayPositionX;
+        var displayPositionY = arguments[2] || ImageView.initDisplayPositionY;
+        //调整大小
+        var width = Math.min(_Private.displayRectBox.width, s.naturalWidth);
+        var height = Math.round(width / s.naturalWidth * s.naturalHeight);
+        if (height > _Private.displayRectBox.height) {
+            height = _Private.displayRectBox.height;
+            width = Math.round(height / s.naturalHeight * s.naturalWidth);
+        }
+        s.width = width;
+        s.height = height;
+        s.left = (ImageView.width + ImageView.imageMargin) * s.index;
+        //裁剪模式
+        if (ImageView.pattern === 'clipping') {
+            displaySize = 'cover';
+            displayPosition = 'center';
+        } else {
+            s.maxScale = s.naturalWidth / s.width;
+            s.initScale = 1;
+        }
+        //根据真实尺寸调整缩放大小
+        switch (displaySize) {
+            case 'cover':
+                var width = Math.round(_Private.displayRectBox.height / s.naturalHeight * s.naturalWidth);
+                var height = Math.round(_Private.displayRectBox.width / s.naturalWidth * s.naturalHeight);
+                if (ImageView.pattern === 'clipping') {
+                    s.initScale = s.maxScale = s.minScale = Math.max(width / s.width, height / s.height);
+                    if (s.width * s.maxScale < s.naturalWidth) {
+                        s.maxScale = s.naturalWidth / s.width;
+                    }
+                    if (width >= _Private.displayRectBox.width) {
+                        s.scale = Math.min(s.maxScale, width / s.width);
+                    } else if (height >= _Private.displayRectBox.height) {
+                        s.scale = Math.min(s.maxScale, height / s.height);
+                    }
+                } else {
+                    if (width >= _Private.displayRectBox.width) {
+                        s.scale = Math.min(s.maxScale, width / s.width);
+                    } else if (height >= _Private.displayRectBox.height) {
+                        s.scale = Math.min(s.maxScale, height / s.height);
+                    }
+                }
+                break;
+            case 'contain':
+            default:
+                s.scale = 1;
+                break;
+        }
+        //调整位置
+        var imageWidth = Math.round(s.width * s.scale);
+        var imageHeight = Math.round(s.height * s.scale);
+        switch (displayPositionX) {
+            case 'left':
+                s.position.x = 0;
+                break;
+            case 'rigth':
+                s.position.x = ImageView.width - imageWidth;
+                break;
+            case 'center':
+            default:
+                s.position.x = Math.round((ImageView.width - imageWidth) / 2);
+                break;
+        }
+        switch (displayPositionY) {
+            case 'top':
+                s.position.y = 0;
+                break;
+            case 'bottom':
+                s.position.x = ImageView.height - imageHeight;
+                break;
+            case 'center':
+            default:
+                s.position.y = Math.round((ImageView.height - imageHeight) / 2);
+                break;
+        }
+    };
+    //默认适应
+    Vimg.prototype.defaultAdaption = function () {
+        this.customAdaption('contain', 'center');
+    };
+    //应用数据到dom元素
+    Vimg.prototype.useDataToImage = function () {
+        var s = this;
+        if (s.image) {
+            s.image.css({
+                zIndex: 2,
+                top: s.top + 'px',
+                left: s.left + 'px',
+                width: s.width + 'px',
+                height: s.height + 'px',
+                transform: 'translate3d(' + s.position.x + 'px, ' + s.position.y + 'px, 0) scale3d(' + s.scale + ',' + s.scale + ',1) rotateZ(' + s.rotate + 'deg)'
+            });
+        }
+    };
+    //调整显示位置
+    Vimg.prototype.adjustPosition = function () {
+        var s = this;
+        var x = s.position.x;
+        var y = s.position.y;
+        var scale = s.scale;
+        var rotate = s.rotate;
+        if (arguments[0]) {
+            scale = s.initScale;
+            rotate = 0;
+            x = (ImageView.width - s.width) / 2;
+            y = (ImageView.height - s.height) / 2;
+        } else {
+            if (s.scale > s.initScale) {
+                if (s.lastScale < s.initScale) {
+                    //如果上一次缩放比例小于初始缩放比例，则还原到初始缩放比例
+                    scale = s.initScale;
+                    x = s.firstPosition.x;
+                    y = s.firstPosition.y;
+                } else if (s.scale > s.maxScale) {
+                    //如果当前缩放比例大于最大放大比例，则还原到最大比例，原点居中
+                    scale = s.maxScale;
+                    x = _Private.displayRectBox.x + s.lastAnchor.x * (1 - scale);
+                    y = _Private.displayRectBox.y + s.lastAnchor.y * (1 - scale);
+                }
+            } else if (s.scale < s.initScale) {
+                if (s.lastScale > s.initScale) {
+                    //如果上一次缩放比例大于初始缩放比例，则还原到初始缩放比例
+                    scale = s.initScale;
+                    x = s.firstPosition.x;
+                    y = s.firstPosition.y;
+                } else if (s.scale < s.minScale) {
+                    //如果当前缩放比例小于最小缩放比例，则还原到最小缩放，原点居中
+                    scale = s.minScale;
+                }
             }
-            s.width = width;
-            s.height = height;
-            s.left = (ImageView.width + ImageView.imageMargin) * s.index;
-            //裁剪模式
-            if (ImageView.pattern === 'clipping') {
-                displaySize = 'cover';
-                displayPosition = 'center';
+            var currentWidth = Math.round(s.width * scale);
+            var currentHeight = Math.round(s.height * scale);
+            if (currentWidth > _Private.displayRectBox.width) {
+                var maxX = -(currentWidth - _Private.displayRectBox.width - _Private.displayRectBox.x);
+                if (x > _Private.displayRectBox.x) {
+                    x = _Private.displayRectBox.x;
+                } else if (x < maxX) {
+                    x = maxX;
+                }
             } else {
-                s.maxScale = s.naturalWidth / s.width;
-                s.initScale = 1;
+                x = (ImageView.width - currentWidth) / 2;
             }
-            //根据真实尺寸调整缩放大小
-            switch (displaySize) {
-                case 'cover':
-                    var width = Math.round(_Private.displayRectBox.height / s.naturalHeight * s.naturalWidth);
-                    var height = Math.round(_Private.displayRectBox.width / s.naturalWidth * s.naturalHeight);
-                    if (ImageView.pattern === 'clipping') {
-                        s.initScale = s.maxScale = s.minScale = Math.max(width / s.width, height / s.height);
-                        if (s.width * s.maxScale < s.naturalWidth) {
-                            s.maxScale = s.naturalWidth / s.width;
-                        }
-                        if (width >= _Private.displayRectBox.width) {
-                            s.scale = Math.min(s.maxScale, width / s.width);
-                        } else if (height >= _Private.displayRectBox.height) {
-                            s.scale = Math.min(s.maxScale, height / s.height);
+            if (currentHeight > _Private.displayRectBox.height) {
+                var maxY = -(currentHeight - _Private.displayRectBox.height - _Private.displayRectBox.y);
+                if (y > _Private.displayRectBox.y) {
+                    y = _Private.displayRectBox.y;
+                } else if (y < maxY) {
+                    y = maxY;
+                }
+            } else {
+                y = (ImageView.height - currentHeight) / 2;
+            }
+        }
+        rotate = 0;
+        if (s.width * scale >= ImageView.width) {
+            s.lastPosition.x = 0;
+        } else {
+            s.lastPosition.x = x;
+        }
+        if (s.height * scale >= ImageView.height) {
+            s.lastPosition.y = 0;
+        } else {
+            s.lastPosition.y = y;
+        }
+        //初始化X轴动画
+        if (s.position.x !== x && _ScrollFx_X.state !== 'running') {
+            _RestoreFx_X.init({ x: s.position.x, }, { x: x });
+            _RestoreFx_X.duration = 300;
+            _RestoreFx_X.onUpdate = function (data) {
+                s.position.x = data.x;
+            };
+            _RestoreFx_X.start();
+        }
+        //初始化Y轴动画
+        if (s.position.y !== y && _ScrollFx_Y.state !== 'running') {
+            _RestoreFx_Y.init({ y: s.position.y, }, { y: y });
+            _RestoreFx_Y.duration = 300;
+            _RestoreFx_Y.onUpdate = function (data) {
+                s.position.y = data.y;
+            };
+            _RestoreFx_Y.start();
+        }
+        //初始化动画
+        _RestoreFx.init({ scale: s.scale, rotate: s.rotate }, { scale: scale, rotate: rotate });
+        _RestoreFx.duration = 300;
+        _RestoreFx.onUpdate = function (data) {
+            s.scale = data.scale;
+            s.rotate = data.rotate;
+            s.useDataToImage();
+        };
+        _RestoreFx.start();
+    };
+    //当图片宽高大于容器时，启用滑动滚屏
+    Vimg.prototype.scrollScreen = function (speed, touch) {
+        var s = this;
+        var horDirection = touch.horDirection;
+        var verDirection = touch.verDirection;
+        //当前宽高
+        var imageWidth = Math.round(s.width * s.scale);
+        var imageHeight = Math.round(s.height * s.scale);
+        //初始位置
+        var initViewBoxPositionX = _Private.viewBoxPositionX;
+        var initPositionX = s.position.x;
+        var initPositionY = s.position.y;
+        //阻尼系数
+        var damping = .3;
+        var friction = .7;
+        var reaction = .05;
+        //摩擦系数增量
+        var incrementX = 1;
+        var incrementY = 1;
+        //当前页数显示盒子的初始位置
+        var ViewBoxInitDataX = -(ImageView.width + ImageView.imageMargin) * (ImageView.page - 1);
+        //如果图片宽度小于容器宽度，不进行惯性动画
+        if (_Private.displayRectBox.width >= imageWidth) {
+            speed.x = 0;
+        }
+        //x轴动画
+        if (Math.abs(speed.x) > _ScrollFx_X.minSpeed) {
+            _ScrollFx_X.init({ x: s.position.x });
+            _ScrollFx_X.initSpeed = speed.x;
+            _ScrollFx_X.friction = friction;
+            _ScrollFx_X.onUpdate = function (data) {
+                var posX = data.x;
+                var pageX = ViewBoxInitDataX;
+                //边界外最大左超出量
+                var maxBeyond = imageWidth - _Private.displayRectBox.width;
+                //当前模式
+                if (ImageView.pattern === 'clipping') {
+                    var maxPosX = _Private.displayRectBox.x - maxBeyond;
+                    //应用x轴
+                    if (posX > _Private.displayRectBox.x) {
+                        posX = _Private.displayRectBox.x;
+                        _ScrollFx_X._nodeSpeed = _ScrollFx_X.minSpeed;
+                    } else if (posX < maxPosX) {
+                        posX = maxPosX;
+                        _ScrollFx_X._nodeSpeed = _ScrollFx_X.minSpeed;
+                    }
+                } else {
+                    //边界外左右超出量
+                    var leftBeyond = _Private.displayRectBox.x - posX;
+                    var rightBeyond = maxBeyond - leftBeyond;
+                    //判断滑动方向
+                    if (_ScrollFx_X.initSpeed < 0) {
+                        //往左滑动
+                        if (rightBeyond <= 0) {
+                            //边界内右超出量
+                            var rightinBeyond = posX + maxBeyond;
+                            if (initViewBoxPositionX < ViewBoxInitDataX) {
+                                pageX = ViewBoxInitDataX + ((initViewBoxPositionX - ViewBoxInitDataX) / damping + (posX - _ScrollFx_X.fromValue.x)) * damping;
+                            } else {
+                                pageX = ViewBoxInitDataX + rightinBeyond * damping;
+                            }
+                            posX = -maxBeyond;
+                            _ScrollFx_X.friction *= incrementX;
+                            if (incrementX === 1) {
+                                incrementX = _ScrollFx_X.friction * reaction;
+                            }
+                        } else if (initViewBoxPositionX > ViewBoxInitDataX) {
+                            _ScrollFx_X.friction *= incrementX;
+                            pageX = initViewBoxPositionX + posX;
+                            posX = 0;
+                            if (incrementX === 1) {
+                                incrementX = _ScrollFx_X.friction * reaction;
+                            }
                         }
                     } else {
-                        if (width >= _Private.displayRectBox.width) {
-                            s.scale = Math.min(s.maxScale, width / s.width);
-                        } else if (height >= _Private.displayRectBox.height) {
-                            s.scale = Math.min(s.maxScale, height / s.height);
+                        //往右滑动
+                        if (leftBeyond <= 0) {
+                            //边界内左超出量
+                            var leftinBeyond = posX;
+                            _ScrollFx_X.friction *= incrementX;
+                            if (initViewBoxPositionX > ViewBoxInitDataX) {
+                                pageX = ViewBoxInitDataX + ((initViewBoxPositionX - ViewBoxInitDataX) / damping + posX) * damping;
+                            } else {
+                                pageX = ViewBoxInitDataX + leftinBeyond * damping;
+                            }
+                            posX = 0;
+                            if (incrementX === 1) {
+                                incrementX = _ScrollFx_X.friction * reaction;
+                            }
+                        } else if (initViewBoxPositionX < ViewBoxInitDataX) {
+                            _ScrollFx_X.friction *= incrementX;
+                            pageX = initViewBoxPositionX - (-maxBeyond - posX);
+                            posX = -maxBeyond;
+                            if (incrementX === 1) {
+                                incrementX = _ScrollFx_X.friction * reaction;
+                            }
                         }
                     }
-                    break;
-                case 'contain':
-                default:
-                    s.scale = 1;
-                    break;
-            }
-            //调整位置
-            var imageWidth = Math.round(s.width * s.scale);
-            var imageHeight = Math.round(s.height * s.scale);
-            switch (displayPositionX) {
-                case 'left':
-                    s.position.x = 0;
-                    break;
-                case 'rigth':
-                    s.position.x = ImageView.width - imageWidth;
-                    break;
-                case 'center':
-                default:
-                    s.position.x = Math.round((ImageView.width - imageWidth) / 2);
-                    break;
-            }
-            switch (displayPositionY) {
-                case 'top':
-                    s.position.y = 0;
-                    break;
-                case 'bottom':
-                    s.position.x = ImageView.height - imageHeight;
-                    break;
-                case 'center':
-                default:
-                    s.position.y = Math.round((ImageView.height - imageHeight) / 2);
-                    break;
-            }
-        },
-        //默认适应
-        defaultAdaption: function () {
-            this.customAdaption('contain', 'center');
-        },
-        //应用数据到dom元素
-        useDataToImage: function () {
-            var s = this;
-            if (s.image) {
-                s.image.css({
-                    zIndex: 2,
-                    top: s.top + 'px',
-                    left: s.left + 'px',
-                    width: s.width + 'px',
-                    height: s.height + 'px',
-                    transform: 'translate3d(' + s.position.x + 'px, ' + s.position.y + 'px, 0) scale3d(' + s.scale + ',' + s.scale + ',1) rotateZ(' + s.rotate + 'deg)'
-                });
-            }
-        },
-        //调整显示位置
-        adjustPosition: function () {
-            var s = this;
-            var x = s.position.x;
-            var y = s.position.y;
-            var scale = s.scale;
-            var rotate = s.rotate;
-            if (arguments[0]) {
-                scale = s.initScale;
-                rotate = 0;
-                x = (ImageView.width - s.width) / 2;
-                y = (ImageView.height - s.height) / 2;
-            } else {
-                if (s.scale > s.initScale) {
-                    if (s.lastScale < s.initScale) {
-                        //如果上一次缩放比例小于初始缩放比例，则还原到初始缩放比例
-                        scale = s.initScale;
-                        x = s.firstPosition.x;
-                        y = s.firstPosition.y;
-                    } else if (s.scale > s.maxScale) {
-                        //如果当前缩放比例大于最大放大比例，则还原到最大比例，原点居中
-                        scale = s.maxScale;
-                        x = _Private.displayRectBox.x + s.lastAnchor.x * (1 - scale);
-                        y = _Private.displayRectBox.y + s.lastAnchor.y * (1 - scale);
-                    }
-                } else if (s.scale < s.initScale) {
-                    if (s.lastScale > s.initScale) {
-                        //如果上一次缩放比例大于初始缩放比例，则还原到初始缩放比例
-                        scale = s.initScale;
-                        x = s.firstPosition.x;
-                        y = s.firstPosition.y;
-                    } else if (s.scale < s.minScale) {
-                        //如果当前缩放比例小于最小缩放比例，则还原到最小缩放，原点居中
-                        scale = s.minScale;
-                    }
                 }
-                var currentWidth = Math.round(s.width * scale);
-                var currentHeight = Math.round(s.height * scale);
-                if (currentWidth > _Private.displayRectBox.width) {
-                    var maxX = -(currentWidth - _Private.displayRectBox.width - _Private.displayRectBox.x);
-                    if (x > _Private.displayRectBox.x) {
-                        x = _Private.displayRectBox.x;
-                    } else if (x < maxX) {
-                        x = maxX;
+                s.position.x = posX;
+                _Private.viewBoxPositionX = pageX;
+                s.useDataToImage();
+                _Private.setViewBoxPositionX();
+            };
+            _ScrollFx_X.onComplete = function () {
+                ImageView.indexPage(ImageView.page);
+            };
+            _ScrollFx_X.start();
+        }
+        //y轴动画
+        if (Math.abs(speed.y) > _ScrollFx_Y.minSpeed) {
+            //y轴动画
+            _ScrollFx_Y.init({ y: s.position.y });
+            _ScrollFx_Y.initSpeed = speed.y;
+            _ScrollFx_Y.friction = friction;
+            _ScrollFx_Y.onUpdate = function (data) {
+                var posY = data.y;
+                //边界外最大下超出量
+                var maxBeyond = imageHeight - _Private.displayRectBox.height;
+                //当前模式
+                if (ImageView.pattern === 'clipping') {
+                    var maxPosY = _Private.displayRectBox.y - maxBeyond;
+                    //应用y轴
+                    if (posY > _Private.displayRectBox.y) {
+                        posY = _Private.displayRectBox.y;
+                        _ScrollFx_Y._nodeSpeed = _ScrollFx_Y.minSpeed;
+                    } else if (posY < maxPosY) {
+                        posY = maxPosY;
+                        _ScrollFx_Y._nodeSpeed = _ScrollFx_Y.minSpeed;
                     }
                 } else {
-                    x = (ImageView.width - currentWidth) / 2;
-                }
-                if (currentHeight > _Private.displayRectBox.height) {
-                    var maxY = -(currentHeight - _Private.displayRectBox.height - _Private.displayRectBox.y);
-                    if (y > _Private.displayRectBox.y) {
-                        y = _Private.displayRectBox.y;
-                    } else if (y < maxY) {
-                        y = maxY;
+                    //边界外上下超出量
+                    var topBeyond = _Private.displayRectBox.y - posY;
+                    var bottomBeyond = maxBeyond - topBeyond;
+                    //判断滑动方向
+                    if (verDirection === 'top') {
+                        if (bottomBeyond <= 0) {
+                            //边界内下超出量
+                            var bottominBeyond = posY + maxBeyond - _Private.displayRectBox.y;
+                            if (initPositionY < -(maxBeyond - _Private.displayRectBox.y)) {
+                                posY = -maxBeyond + ((initPositionY + maxBeyond) / damping + (posY - initPositionY)) * damping;
+                            } else {
+                                posY = _Private.displayRectBox.y - maxBeyond + bottominBeyond * damping;
+                            }
+                            _ScrollFx_Y.friction *= incrementY;
+                            if (incrementY === 1) {
+                                incrementY = _ScrollFx_Y.friction * reaction;
+                            }
+                        }
+                    } else if (verDirection === 'bottom') {
+                        if (topBeyond <= 0) {
+                            //边界内上超出量
+                            var topinBeyond = posY - _Private.displayRectBox.y;
+                            if (initPositionY > _Private.displayRectBox.y) {
+                                posY = (initPositionY / damping + (posY - initPositionY)) * damping;
+                            } else {
+                                posY = _Private.displayRectBox.y + topinBeyond * damping;
+                            }
+                            _ScrollFx_Y.friction *= incrementY;
+                            if (incrementY === 1) {
+                                incrementY = _ScrollFx_Y.friction * reaction;
+                            }
+                        }
                     }
-                } else {
-                    y = (ImageView.height - currentHeight) / 2;
                 }
-            }
-            rotate = 0;
-            if (s.width * scale >= ImageView.width) {
-                s.lastPosition.x = 0;
-            } else {
-                s.lastPosition.x = x;
-            }
-            if (s.height * scale >= ImageView.height) {
-                s.lastPosition.y = 0;
-            } else {
-                s.lastPosition.y = y;
-            }
-            //初始化X轴动画
-            if (s.position.x !== x && _ScrollFx_X.state !== 'running') {
-                _RestoreFx_X.init({ x: s.position.x, }, { x: x });
-                _RestoreFx_X.duration = 300;
-                _RestoreFx_X.onUpdate = function (data) {
-                    s.position.x = data.x;
-                };
-                _RestoreFx_X.start();
-            }
-            //初始化Y轴动画
-            if (s.position.y !== y && _ScrollFx_Y.state !== 'running') {
-                _RestoreFx_Y.init({ y: s.position.y, }, { y: y });
-                _RestoreFx_Y.duration = 300;
-                _RestoreFx_Y.onUpdate = function (data) {
-                    s.position.y = data.y;
-                };
-                _RestoreFx_Y.start();
-            }
-            //初始化动画
-            _RestoreFx.init({ scale: s.scale, rotate: s.rotate }, { scale: scale, rotate: rotate });
-            _RestoreFx.duration = 300;
-            _RestoreFx.onUpdate = function (data) {
-                s.scale = data.scale;
-                s.rotate = data.rotate;
+                s.position.y = posY;
                 s.useDataToImage();
             };
-            _RestoreFx.start();
-        },
-        //当图片宽高大于容器时，启用滑动滚屏
-        scrollScreen: function (speed, touch) {
-            var s = this;
-            var horDirection = touch.horDirection;
-            var verDirection = touch.verDirection;
-            //当前宽高
-            var imageWidth = Math.round(s.width * s.scale);
-            var imageHeight = Math.round(s.height * s.scale);
-            //初始位置
-            var initViewBoxPositionX = _Private.viewBoxPositionX;
-            var initPositionX = s.position.x;
-            var initPositionY = s.position.y;
-            //阻尼系数
-            var damping = .3;
-            var friction = .7;
-            var reaction = .05;
-            //摩擦系数增量
-            var incrementX = 1;
-            var incrementY = 1;
-            //当前页数显示盒子的初始位置
-            var ViewBoxInitDataX = -(ImageView.width + ImageView.imageMargin) * (ImageView.page - 1);
-            //如果图片宽度小于容器宽度，不进行惯性动画
-            if (_Private.displayRectBox.width >= imageWidth) {
-                speed.x = 0;
-            }
-            //x轴动画
-            if (Math.abs(speed.x) > _ScrollFx_X.minSpeed) {
-                _ScrollFx_X.init({ x: s.position.x });
-                _ScrollFx_X.initSpeed = speed.x;
-                _ScrollFx_X.friction = friction;
-                _ScrollFx_X.onUpdate = function (data) {
-                    var posX = data.x;
-                    var pageX = ViewBoxInitDataX;
-                    //边界外最大左超出量
-                    var maxBeyond = imageWidth - _Private.displayRectBox.width;
-                    //当前模式
-                    if (ImageView.pattern === 'clipping') {
-                        var maxPosX = _Private.displayRectBox.x - maxBeyond;
-                        //应用x轴
-                        if (posX > _Private.displayRectBox.x) {
-                            posX = _Private.displayRectBox.x;
-                            _ScrollFx_X._nodeSpeed = _ScrollFx_X.minSpeed;
-                        } else if (posX < maxPosX) {
-                            posX = maxPosX;
-                            _ScrollFx_X._nodeSpeed = _ScrollFx_X.minSpeed;
-                        }
-                    } else {
-                        //边界外左右超出量
-                        var leftBeyond = _Private.displayRectBox.x - posX;
-                        var rightBeyond = maxBeyond - leftBeyond;
-                        //判断滑动方向
-                        if (_ScrollFx_X.initSpeed < 0) {
-                            //往左滑动
-                            if (rightBeyond <= 0) {
-                                //边界内右超出量
-                                var rightinBeyond = posX + maxBeyond;
-                                if (initViewBoxPositionX < ViewBoxInitDataX) {
-                                    pageX = ViewBoxInitDataX + ((initViewBoxPositionX - ViewBoxInitDataX) / damping + (posX - _ScrollFx_X.fromValue.x)) * damping;
-                                } else {
-                                    pageX = ViewBoxInitDataX + rightinBeyond * damping;
-                                }
-                                posX = -maxBeyond;
-                                _ScrollFx_X.friction *= incrementX;
-                                if (incrementX === 1) {
-                                    incrementX = _ScrollFx_X.friction * reaction;
-                                }
-                            } else if (initViewBoxPositionX > ViewBoxInitDataX) {
-                                _ScrollFx_X.friction *= incrementX;
-                                pageX = initViewBoxPositionX + posX;
-                                posX = 0;
-                                if (incrementX === 1) {
-                                    incrementX = _ScrollFx_X.friction * reaction;
-                                }
-                            }
-                        } else {
-                            //往右滑动
-                            if (leftBeyond <= 0) {
-                                //边界内左超出量
-                                var leftinBeyond = posX;
-                                _ScrollFx_X.friction *= incrementX;
-                                if (initViewBoxPositionX > ViewBoxInitDataX) {
-                                    pageX = ViewBoxInitDataX + ((initViewBoxPositionX - ViewBoxInitDataX) / damping + posX) * damping;
-                                } else {
-                                    pageX = ViewBoxInitDataX + leftinBeyond * damping;
-                                }
-                                posX = 0;
-                                if (incrementX === 1) {
-                                    incrementX = _ScrollFx_X.friction * reaction;
-                                }
-                            } else if (initViewBoxPositionX < ViewBoxInitDataX) {
-                                _ScrollFx_X.friction *= incrementX;
-                                pageX = initViewBoxPositionX - (-maxBeyond - posX);
-                                posX = -maxBeyond;
-                                if (incrementX === 1) {
-                                    incrementX = _ScrollFx_X.friction * reaction;
-                                }
-                            }
-                        }
-                    }
-                    s.position.x = posX;
-                    _Private.viewBoxPositionX = pageX;
-                    s.useDataToImage();
-                    _Private.setViewBoxPositionX();
-                };
-                _ScrollFx_X.onComplete = function () {
-                    ImageView.indexPage(ImageView.page);
-                };
-                _ScrollFx_X.start();
-            }
-            //y轴动画
-            if (Math.abs(speed.y) > _ScrollFx_Y.minSpeed) {
-                //y轴动画
-                _ScrollFx_Y.init({ y: s.position.y });
-                _ScrollFx_Y.initSpeed = speed.y;
-                _ScrollFx_Y.friction = friction;
-                _ScrollFx_Y.onUpdate = function (data) {
-                    var posY = data.y;
-                    //边界外最大下超出量
-                    var maxBeyond = imageHeight - _Private.displayRectBox.height;
-                    //当前模式
-                    if (ImageView.pattern === 'clipping') {
-                        var maxPosY = _Private.displayRectBox.y - maxBeyond;
-                        //应用y轴
-                        if (posY > _Private.displayRectBox.y) {
-                            posY = _Private.displayRectBox.y;
-                            _ScrollFx_Y._nodeSpeed = _ScrollFx_Y.minSpeed;
-                        } else if (posY < maxPosY) {
-                            posY = maxPosY;
-                            _ScrollFx_Y._nodeSpeed = _ScrollFx_Y.minSpeed;
-                        }
-                    } else {
-                        //边界外上下超出量
-                        var topBeyond = _Private.displayRectBox.y - posY;
-                        var bottomBeyond = maxBeyond - topBeyond;
-                        //判断滑动方向
-                        if (verDirection === 'top') {
-                            if (bottomBeyond <= 0) {
-                                //边界内下超出量
-                                var bottominBeyond = posY + maxBeyond - _Private.displayRectBox.y;
-                                if (initPositionY < -(maxBeyond - _Private.displayRectBox.y)) {
-                                    posY = -maxBeyond + ((initPositionY + maxBeyond) / damping + (posY - initPositionY)) * damping;
-                                } else {
-                                    posY = _Private.displayRectBox.y - maxBeyond + bottominBeyond * damping;
-                                }
-                                _ScrollFx_Y.friction *= incrementY;
-                                if (incrementY === 1) {
-                                    incrementY = _ScrollFx_Y.friction * reaction;
-                                }
-                            }
-                        } else if (verDirection === 'bottom') {
-                            if (topBeyond <= 0) {
-                                //边界内上超出量
-                                var topinBeyond = posY - _Private.displayRectBox.y;
-                                if (initPositionY > _Private.displayRectBox.y) {
-                                    posY = (initPositionY / damping + (posY - initPositionY)) * damping;
-                                } else {
-                                    posY = _Private.displayRectBox.y + topinBeyond * damping;
-                                }
-                                _ScrollFx_Y.friction *= incrementY;
-                                if (incrementY === 1) {
-                                    incrementY = _ScrollFx_Y.friction * reaction;
-                                }
-                            }
-                        }
-                    }
-                    s.position.y = posY;
-                    s.useDataToImage();
-                };
-                _ScrollFx_Y.onComplete = function () {
-                    ImageView.indexPage(ImageView.page);
-                };
-                _ScrollFx_Y.start();
-            }
-            if (Math.abs(speed.x) <= _ScrollFx_X.minSpeed &&
-                Math.abs(speed.y) <= _ScrollFx_Y.minSpeed) {
+            _ScrollFx_Y.onComplete = function () {
                 ImageView.indexPage(ImageView.page);
-            }
+            };
+            _ScrollFx_Y.start();
         }
-    });
-    /*
-        主程序
-    */
-    function ImageViewMe(option) {
-        var s = ImageViewMe;
-        option = option || s.defaultOption;
-        //应用选项
-        Object.keys(s.defaultOption).forEach(function (name) {
-            if (name in option) {
-                s.currentOption[name] = option[name];
-            } else {
-                s.currentOption[name] = s.defaultOption[name];
-            }
-        });
+        if (Math.abs(speed.x) <= _ScrollFx_X.minSpeed &&
+            Math.abs(speed.y) <= _ScrollFx_Y.minSpeed) {
+            ImageView.indexPage(ImageView.page);
+        }
     };
-    //注册监听器
-    EventPush.register(ImageViewMe);
-    //添加属性和方法
-    oftenFunc.extend(ImageViewMe, {
-        //当前图片列表
-        imageList: null,
-        //当前显示状态(0：关闭 1：显示)
-        displayState: 0,
-        //容器尺寸
-        containerWidth: 0,
-        containerHeight: 0,
-        //当前选项数据
-        currentOption: {},
-        //默认选项
-        defaultOption: {
-            //当前页
-            page: 1,
-            //选择器
-            selector: '',
-            //当前模式(default(翻页浏览) edit(编辑) clipping(剪裁))
-            pattern: 'default',
-            //图片间距
-            imageMargin: 10,
-            /*
-                图像的初始显示尺寸(裁剪模式不可用)
-                    cover (图像扩展至足够大，使图像完全覆盖显示区域) 
-                    contain (图像扩展至最大尺寸，使其宽度和高度完全适应显示区域)
-            */
-            initDisplaySize: 'cover',
-            /*
-                图像的初始水平显示位置(裁剪模式不可用)
-                    top (仅当initDisplaySize='cover' 时生效)
-                    center (居中显示)
-                    bottom (仅当initDisplaySize='cover' 时生效)
-            */
-            initDisplayPositionX: 'center',
-            /*
-                图像的初始垂直显示位置(裁剪模式不可用)
-                    left (仅当initDisplaySize='cover' 时生效)
-                    center (居中显示)
-                    rihgt (仅当initDisplaySize='cover' 时生效)
-            */
-            initDisplayPositionY: 'center',
-            //裁剪后输出的图片宽度(默认：容器宽度)
-            clippingWidth: null,
-            //裁剪后输出的图片高度(默认：容器宽度)
-            clippingHeight: null,
-            //裁剪图片的圆角数值(默认：0)
-            clippingRadius: 0,
-            //裁剪后输出的图片背景(默认：透明)
-            clippingBackground: 'transparency',
-            //裁剪后输出的图片格式
-            clippingImportSuffix: 'image/png',
-            //裁剪后输出的图片压缩比例
-            clippingCompressedRatio: 1,
-            //手势事件是否能进行旋转
-            isGestureRotate: false,
-            //当使用dom事件触发显示时，是否查找目标元素是否存在于图片列表中
-            isFindTargettoImageList: true
-        },
-        //元素缓存
-        elementCache: {
-            container: null,
-            //绘制画布
-            drawCanvas: document.createElement('canvas'),
-            //输出画布
-            outputCanvas: document.createElement('canvas'),
-        },
-        //显示
-        show: function (json) {
-            var s = this;
-            _Private.applyOptionParam(json);
-            _Private.selectorDispose(s.selector);
-            //是否显示
-            var isDisplay = false;
-            if (s.vImageList.length) {
-                if (event) { isDisplay = _Private.isEventTargettovImageList(); }
-                else { isDisplay = true; }
-            }
-            //显示前的准备
-            if (isDisplay) {
-                s.width = window.innerWidth;
-                s.height = window.innerHeight;
-                //添加元素到body
-                document.body.appendChild(_Element.container);
-                _Element.container.removeClass('iv_hide').setAttribute('data-pattern', s.pattern);
-                //设置当前页为选中状态
-                var pageIndex = s.page - 1;
-                var vimg = s.vImageList[pageIndex];
-                s.vImageList[pageIndex].selected = true;
-                _Private.viewBoxPositionX = -(s.width + s.imageMargin) * pageIndex;
-                //更新数据
-                _Private.updatePageData();
-                _Private.setViewBoxPositionX();
-                //当前页图片目标是否为元素
-                if (vimg.target.nodeType) {
-                    _Private.imagesEaseinAnimate();
-                } else {
-                    _Private.notAnimateShow();
-                }
-                if (s.pattern === 'clipping') {
-                    _Private.clippingMaskAdaptContainerSize();
-                } else {
-                    _Private.displayRectBox.x = 0;
-                    _Private.displayRectBox.y = 0;
-                    _Private.displayRectBox.width = s.width;
-                    _Private.displayRectBox.height = s.height;
-                }
-                //加载图片
-                _Private.loadImages(s.vImageList);
-            }
-        },
-        //关闭
-        close: function () {
-            var s = this;
+    /*
+        图像查看器
+    */
+    function ImageView() {
+        var s = this;
+        //容器大小
+        s.width = 0;
+        s.height = 0;
+        //当前页
+        s.page = 1;
+        //当前状态(close：关闭 show：显示)
+        s.state = 'close';
+        //图片列表
+        s.vImageList = null;
+        //选择器
+        s.selector = null;
+        //当前模式(默认：default 可选：edit(编辑) clipping(剪裁))
+        s.pattern = null;
+        //图片间距(默认：10)
+        s.imageMargin = null;
+        /*
+            图像的初始显示尺寸(裁剪模式不可用)
+                默认：cover
+                cover (图像扩展至足够大，使图像完全覆盖显示区域) 
+                contain (图像扩展至最大尺寸，使其宽度和高度完全适应显示区域)
+        */
+        s.initDisplaySize = null;
+        /*
+            图像的初始水平显示位置(裁剪模式不可用)
+                默认：center
+                top (仅当initDisplaySize='cover' 时生效)
+                center (居中显示)
+                bottom (仅当initDisplaySize='cover' 时生效)
+        */
+        s.initDisplayPositionX = null;
+        /*
+            图像的初始垂直显示位置(裁剪模式不可用)
+                默认：center
+                left (仅当initDisplaySize='cover' 时生效)
+                center (居中显示)
+                rihgt (仅当initDisplaySize='cover' 时生效)
+        */
+        s.initDisplayPositionY = null;
+        //裁剪后输出的图片宽度(默认：容器宽度)
+        s.clippingWidth = null;
+        //裁剪后输出的图片高度(默认：容器宽度)
+        s.clippingHeight = null;
+        //裁剪图片的圆角数值(默认：0)
+        s.clippingRadius = null;
+        //裁剪后输出的图片背景(默认：透明)
+        s.clippingBackground = null;
+        //裁剪后输出的图片后缀(默认：png 可选：jpge)
+        s.clippingImportSuffix = null;
+        //裁剪后输出的图片压缩比例
+        s.clippingCompressedRatio = .5;
+        //手势事件是否能进行旋转(默认：false 可选：true)
+        s.isGestureRotate = null;
+        //当使用dom事件触发显示时，是否查找目标元素是否存在于图片列表中
+        s.isFindTargettoImageList = null;
+        //注册监听器
+        Listeners.register(s);
+    };
+    //显示入口
+    ImageView.prototype.show = function (json) {
+        var s = this;
+        _Private.applyOptionParam(json);
+        _Private.selectorDispose(s.selector);
+        //是否显示
+        var isDisplay = false;
+        if (s.vImageList.length) {
+            if (event) { isDisplay = _Private.isEventTargettovImageList(); }
+            else { isDisplay = true; }
+        }
+        //显示前的准备
+        if (isDisplay) {
+            s.width = window.innerWidth;
+            s.height = window.innerHeight;
+            //添加元素到body
+            document.body.appendChild(_Element.container);
+            _Element.container.removeClass('iv_hide').setAttribute('data-pattern', s.pattern);
+            //设置当前页为选中状态
             var pageIndex = s.page - 1;
             var vimg = s.vImageList[pageIndex];
-            //当前页图片目标是否为元素
-            if (vimg.target.nodeType && vimg.target.parentNode) {
-                _Private.imagesEaseoutAnimate();
-            } else {
-                _Private.notAnimateClose();
-            }
-        },
-        //上一页
-        prevPage: function () {
-            var s = this;
-            var page = s.page;
-            if (s.page > 1) {
-                page--;
-            }
-            s.indexPage(page);
-        },
-        //下一页
-        nextPage: function () {
-            var s = this;
-            var page = s.page;
-            if (s.page < s.vImageList.length) {
-                page++;
-            }
-            s.indexPage(page);
-        },
-        //跳转到指定页
-        indexPage: function (index) {
-            var s = this;
-            var page = s.page;
-            if (index >= 1 && index <= s.vImageList.length) {
-                s.page = index;
-            }
-            var end = -s.width * (s.page - 1) - (s.imageMargin * (s.page - 1));
-            if (_ScrollFx_X.state != 'running' && _Private.viewBoxPositionX - end) {
-                _PageFx.init({ x: _Private.viewBoxPositionX }, { x: end });
-                _PageFx.duration = 300;
-                _PageFx.onUpdate = function (data) {
-                    _Private.viewBoxPositionX = data.x;
-                    _Private.setViewBoxPositionX();
-                };
-                _PageFx.onComplete = function () {
-                    s.dispatchEvent('pageend');
-                    _Interaction.pageingSign = false;
-                };
-                _PageFx.start();
-            }
-            if (page !== s.page) {
-                s.dispatchEvent('pageing');
-                _Interaction.pageingSign = true;
-            }
-            if (page === s.page) {
-                s.vImageList[page - 1].adjustPosition();
-            } else {
-                s.vImageList[page - 1].adjustPosition(true);
-            }
-            //更新翻页数据
+            s.vImageList[pageIndex].selected = true;
+            _Private.viewBoxPositionX = -(s.width + s.imageMargin) * pageIndex;
+            //更新数据
             _Private.updatePageData();
-        },
-        //还原初始状态
-        restore: function () {
-            var s = this;
-            s.page = 1;
-            s.vImageList = [];
-            _Private.viewBoxPositionX = 0;
-            _Element.iv_viewBox.innerHTML = '';
-            _Element.iv_confbtn.innerText = '完成';
-            _Element.iv_confbtn.removeAttribute('disabled');
-            _Private.checkboxsEvent();
+            _Private.setViewBoxPositionX();
+            //当前页图片目标是否为元素
+            if (vimg.target.nodeType) {
+                _Private.imagesEaseinAnimate();
+            } else {
+                _Private.notAnimateShow();
+            }
+            if (s.pattern === 'clipping') {
+                _Private.clippingMaskAdaptContainerSize();
+            } else {
+                _Private.displayRectBox.x = 0;
+                _Private.displayRectBox.y = 0;
+                _Private.displayRectBox.width = s.width;
+                _Private.displayRectBox.height = s.height;
+            }
+            //加载图片
+            _Private.loadImages(s.vImageList);
         }
-    });
+    };
+    //关闭
+    ImageView.prototype.close = function () {
+        var s = this;
+        var pageIndex = s.page - 1;
+        var vimg = s.vImageList[pageIndex];
+        //当前页图片目标是否为元素
+        if (vimg.target.nodeType && vimg.target.parentNode) {
+            _Private.imagesEaseoutAnimate();
+        } else {
+            _Private.notAnimateClose();
+        }
+    };
+    //上一页
+    ImageView.prototype.prevPage = function () {
+        var s = this;
+        var page = s.page;
+        if (s.page > 1) {
+            page--;
+        }
+        s.indexPage(page);
+    };
+    //下一页
+    ImageView.prototype.nextPage = function () {
+        var s = this;
+        var page = s.page;
+        if (s.page < s.vImageList.length) {
+            page++;
+        }
+        s.indexPage(page);
+    };
+    //跳转到指定页
+    ImageView.prototype.indexPage = function (index) {
+        var s = this;
+        var page = s.page;
+        if (index >= 1 && index <= s.vImageList.length) {
+            s.page = index;
+        }
+        var end = -s.width * (s.page - 1) - (s.imageMargin * (s.page - 1));
+        if (_ScrollFx_X.state != 'running' && _Private.viewBoxPositionX - end) {
+            _PageFx.init({ x: _Private.viewBoxPositionX }, { x: end });
+            _PageFx.duration = 300;
+            _PageFx.onUpdate = function (data) {
+                _Private.viewBoxPositionX = data.x;
+                _Private.setViewBoxPositionX();
+            };
+            _PageFx.onComplete = function () {
+                s.dispatchEvent('pageend');
+                _Interaction.pageingSign = false;
+            };
+            _PageFx.start();
+        }
+        if (page !== s.page) {
+            s.dispatchEvent('pageing');
+            _Interaction.pageingSign = true;
+        }
+        if (page === s.page) {
+            s.vImageList[page - 1].adjustPosition();
+        } else {
+            s.vImageList[page - 1].adjustPosition(true);
+        }
+        //更新翻页数据
+        _Private.updatePageData();
+    };
+    //还原初始状态
+    ImageView.prototype.restore = function () {
+        var s = this;
+        s.page = 1;
+        s.vImageList = [];
+        _Private.viewBoxPositionX = 0;
+        _Element.iv_viewBox.innerHTML = '';
+        _Element.iv_confbtn.innerText = '完成';
+        _Element.iv_confbtn.removeAttribute('disabled');
+        _Private.checkboxsEvent();
+    };
+    //实例化
+    ImageView = window.ImageView = new ImageView();
     /*
         交互事件
     */
@@ -1738,9 +1525,9 @@
             return Math.atan2(y, x) * 180 / Math.PI;
         }
     };
-    /*
-        私有方法
-    */
+    //元素
+    var _Element = {};
+    //私有方法
     var _Private = {
         //显示盒子位置
         viewBoxPositionX: 0,
@@ -2541,6 +2328,6 @@
             }
         }
     };
-    //开放入口
-    window.ImageViewMe = ImageViewMe;
-})(window);
+    //初始化
+    _Private.init();
+})();
