@@ -5,11 +5,11 @@
 效果图：
 --------------------------------------
 ### 浏览模式
-![](https://github.com/qq597392321/ImageView/blob/master/example/gif/1.gif) 
+![](https://github.com/i-yxs/ImageView/blob/master/example/gif/1.gif) 
 ### 编辑模式
-![](https://github.com/qq597392321/ImageView/blob/master/example/gif/2.gif) 
+![](https://github.com/i-yxs/ImageView/blob/master/example/gif/2.gif) 
 ### 裁剪模式
-![](https://github.com/qq597392321/ImageView/blob/master/example/gif/3.gif) 
+![](https://github.com/i-yxs/ImageView/blob/master/example/gif/3.gif) 
 
 文档：
 --------------------------------------
