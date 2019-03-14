@@ -1008,8 +1008,8 @@
     /*
         主程序
     */
-    function ImageViewMe(option) {
-        var s = ImageViewMe;
+    function ImageView(option) {
+        var s = ImageView;
         option = option || s.defaultOption;
         //应用选项
         Object.keys(s.defaultOption).forEach(function (name) {
@@ -1021,9 +1021,9 @@
         });
     };
     //注册监听器
-    EventPush.register(ImageViewMe);
+    EventPush.register(ImageView);
     //添加属性和方法
-    oftenFunc.extend(ImageViewMe, {
+    oftenFunc.extend(ImageView, {
         //当前图片列表
         imageList: null,
         //当前显示状态(0：关闭 1：显示)
@@ -2542,5 +2542,5 @@
         }
     };
     //开放入口
-    window.ImageViewMe = ImageViewMe;
+    window.ImageView = ImageView;
 })(window);
