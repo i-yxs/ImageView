@@ -2,14 +2,12 @@
 (不依赖任何库，兼容主流浏览器)
 
 --------------------------------------
-效果图：
+demo：
 --------------------------------------
-### 浏览模式
-![](https://github.com/i-yxs/ImageView/blob/master/example/gif/1.gif) 
-### 编辑模式
-![](https://github.com/i-yxs/ImageView/blob/master/example/gif/2.gif) 
-### 裁剪模式
-![](https://github.com/i-yxs/ImageView/blob/master/example/gif/3.gif) 
+[图像列表预览](https://i-yxs.github.io/ImageView/example/demo1.html)
+[配置预览](https://i-yxs.github.io/ImageView/example/demo2.html)
+[列表删除](https://i-yxs.github.io/ImageView/example/demo3.html)
+[图像截取](https://i-yxs.github.io/ImageView/example/demo4.html)
 
 文档：
 --------------------------------------
